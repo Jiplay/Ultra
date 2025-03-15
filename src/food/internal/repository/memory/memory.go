@@ -9,12 +9,12 @@ import (
 
 type Repository struct {
 	sync.RWMutex
-	data map[model.RecipeID]*model.Recipes
+	data map[model.RecipeID]*model.Recipe
 }
 
-func New() *Repository { return &Repository{data: make(map[model.RecipeID]*model.Recipes)} }
+func New() *Repository { return &Repository{data: make(map[model.RecipeID]*model.Recipe)} }
 
-func (r *Repository) Get(_ context.Context, recipeID model.RecipeID) (*model.Recipes, error) {
+func (r *Repository) Get(_ context.Context, recipeID model.RecipeID) (*model.Recipe, error) {
 	r.RLock()
 	defer r.RUnlock()
 	data, ok := r.data[recipeID]
@@ -24,7 +24,7 @@ func (r *Repository) Get(_ context.Context, recipeID model.RecipeID) (*model.Rec
 	return data, nil
 }
 
-func (r *Repository) Put(recipe *model.Recipes) error {
+func (r *Repository) Put(recipe *model.Recipe) error {
 	r.Lock()
 	defer r.Unlock()
 	r.data[recipe.ID] = recipe

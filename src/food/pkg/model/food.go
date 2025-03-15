@@ -2,7 +2,7 @@ package model
 
 type RecipeID string
 
-type Recipes struct {
+type Recipe struct {
 	ID          RecipeID    `json:"id"`
 	Name        string      `json:"name"`
 	Description string      `json:"description"`
