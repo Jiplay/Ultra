@@ -9,7 +9,7 @@ import (
 var ErrNotFound = errors.New("resources not found")
 
 type sportRepository interface {
-	GetPlan(ctx context.Context, id model.WorkoutPlanID) (*model.WorkoutPlan, error)
+	GetPlan(ctx context.Context, id model.WorkoutID) (*model.Workout, error)
 	GetPerformance(ctx context.Context, id model.WorkoutPerformanceID) (*model.WorkoutPerformance, error)
 }
 
@@ -21,7 +21,7 @@ func New(repo sportRepository) *Controller {
 	return &Controller{repo}
 }
 
-func (c *Controller) GetPlan(ctx context.Context, id model.WorkoutPlanID) (*model.WorkoutPlan, error) {
+func (c *Controller) GetPlan(ctx context.Context, id model.WorkoutID) (*model.Workout, error) {
 	plan, err := c.repo.GetPlan(ctx, id)
 	if err != nil && errors.Is(err, ErrNotFound) {
 		return nil, ErrNotFound

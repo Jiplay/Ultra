@@ -18,27 +18,27 @@ type Gateway struct {
 func New(address string) *Gateway { return &Gateway{address: address} }
 
 // GetWorkout returns info linked a workoutID
-func (g *Gateway) GetWorkout(ctx context.Context, id model.WorkoutPlanID) (model.WorkoutPlan, error) {
+func (g *Gateway) GetWorkout(ctx context.Context, id model.WorkoutID) (model.Workout, error) {
 	req, err := http.NewRequest("GET", g.address+"/plans", nil)
 	if err != nil {
-		return model.WorkoutPlan{}, err
+		return model.Workout{}, err
 	}
 	req = req.WithContext(ctx)
 	values := req.URL.Query()
 	values.Add("id", string(id))
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return model.WorkoutPlan{}, err
+		return model.Workout{}, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {
-		return model.WorkoutPlan{}, gateway.ErrNotFound
+		return model.Workout{}, gateway.ErrNotFound
 	} else if resp.StatusCode/100 != 2 {
-		return model.WorkoutPlan{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return model.Workout{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
-	var v model.WorkoutPlan
+	var v model.Workout
 	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
-		return model.WorkoutPlan{}, err
+		return model.Workout{}, err
 	}
 	return v, nil
 }

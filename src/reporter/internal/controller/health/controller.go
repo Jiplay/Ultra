@@ -10,7 +10,7 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type sportGateway interface {
-	GetWorkout(ctx context.Context, id model.WorkoutPlanID) (model.WorkoutPlan, error)
+	GetWorkout(ctx context.Context, id model.WorkoutID) (model.Workout, error)
 	GetPerformance(ctx context.Context, id model.WorkoutPerformanceID) (model.WorkoutPerformance, error)
 }
 
@@ -27,10 +27,10 @@ func New(sportGateway sportGateway, foodGateway foodGateway) *Controller {
 	return &Controller{sportGateway: sportGateway, foodGateway: foodGateway}
 }
 
-func (c *Controller) GetWorkout(ctx context.Context, id model.WorkoutPlanID) (model.WorkoutPlan, error) {
+func (c *Controller) GetWorkout(ctx context.Context, id model.WorkoutID) (model.Workout, error) {
 	workout, err := c.sportGateway.GetWorkout(ctx, id)
 	if err != nil && errors.Is(err, ErrNotFound) {
-		return model.WorkoutPlan{}, ErrNotFound
+		return model.Workout{}, ErrNotFound
 	} else if err != nil {
 		return workout, err
 	}

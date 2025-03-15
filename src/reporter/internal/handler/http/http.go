@@ -33,7 +33,7 @@ func (h *Handler) GetRecipe(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetWorkout(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
-	workout, err := h.ctrl.GetWorkout(r.Context(), model.WorkoutPlanID(id))
+	workout, err := h.ctrl.GetWorkout(r.Context(), model.WorkoutID(id))
 	if err != nil && errors.Is(err, gateway.ErrNotFound) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	} else if err != nil {

@@ -2,13 +2,13 @@ package model
 
 import "time"
 
-type WorkoutPlanID string
+type WorkoutID string
 type ExercisePlanID string
 type WorkoutPerformanceID string
 type ExercisePerformanceID string
 
-type WorkoutPlan struct {
-	ID          WorkoutPlanID  `json:"id"`
+type Workout struct {
+	ID          WorkoutID      `json:"id"`
 	Name        string         `json:"name"`
 	Description string         `json:"description"`
 	Exercises   []ExercisePlan `json:"exercises"`
@@ -26,7 +26,7 @@ type ExercisePlan struct {
 
 type WorkoutPerformance struct {
 	ID                   WorkoutPerformanceID   `json:"id"`
-	PlanID               WorkoutPlanID          `json:"plan_id"`
+	PlanID               WorkoutID              `json:"plan_id"`
 	Date                 time.Time              `json:"date"`
 	ExercisesPerformance []ExercisesPerformance `json:"exercises_performance"`
 }

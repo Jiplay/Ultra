@@ -9,19 +9,19 @@ import (
 
 type Repository struct {
 	sync.RWMutex
-	planData        map[model.WorkoutPlanID]*model.WorkoutPlan
+	planData        map[model.WorkoutID]*model.Workout
 	performanceData map[model.WorkoutPerformanceID]*model.WorkoutPerformance
 }
 
 // New creates a new repository
 func New() *Repository {
 	return &Repository{
-		planData:        make(map[model.WorkoutPlanID]*model.WorkoutPlan),
+		planData:        make(map[model.WorkoutID]*model.Workout),
 		performanceData: make(map[model.WorkoutPerformanceID]*model.WorkoutPerformance),
 	}
 }
 
-func (r *Repository) GetPlan(_ context.Context, id model.WorkoutPlanID) (*model.WorkoutPlan, error) {
+func (r *Repository) GetPlan(_ context.Context, id model.WorkoutID) (*model.Workout, error) {
 	r.Lock()
 	defer r.Unlock()
 	p, ok := r.planData[id]

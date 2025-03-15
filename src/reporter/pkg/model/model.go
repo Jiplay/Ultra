@@ -7,6 +7,6 @@ import (
 
 type Health struct {
 	Recipes      food.Recipe `json:"recipes"`
-	WorkoutPlans sport.WorkoutPlan
+	WorkoutPlans sport.Workout
 	Performances sport.WorkoutPerformance
 }
