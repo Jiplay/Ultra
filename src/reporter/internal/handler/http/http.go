@@ -7,7 +7,7 @@ import (
 	"net/http"
 	food "ultra.com/food/pkg/model"
 	"ultra.com/reporter/internal/controller/health"
-	gateway "ultra.com/reporter/internal/gateway/sport"
+	"ultra.com/reporter/internal/gateway"
 	"ultra.com/sport/pkg/model"
 )
 

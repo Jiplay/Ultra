@@ -4,22 +4,29 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
-	gateway "ultra.com/reporter/internal/gateway/sport"
+	"ultra.com/pkg/discovery"
+	"ultra.com/reporter/internal/gateway"
 	"ultra.com/sport/pkg/model"
 )
 
 // Gateway defines a HTTP gateway for a sport service
 type Gateway struct {
-	address string
+	registry discovery.Registry
 }
 
 // New return a new Sport gateway
-func New(address string) *Gateway { return &Gateway{address: address} }
+func New(registry discovery.Registry) *Gateway { return &Gateway{registry} }
 
 // GetWorkout returns info linked a workoutID
 func (g *Gateway) GetWorkout(ctx context.Context, id model.WorkoutID) (model.Workout, error) {
-	req, err := http.NewRequest("GET", g.address+"/plans", nil)
+	addresses, err := g.registry.ServiceAddresses(ctx, "sport")
+	if err != nil {
+		return model.Workout{}, err
+	}
+	url := "http://" + addresses[rand.Intn(len(addresses))] + "/workout"
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return model.Workout{}, err
 	}
@@ -44,7 +51,12 @@ func (g *Gateway) GetWorkout(ctx context.Context, id model.WorkoutID) (model.Wor
 }
 
 func (g *Gateway) GetPerformance(ctx context.Context, id model.WorkoutPerformanceID) (model.WorkoutPerformance, error) {
-	req, err := http.NewRequest("GET", g.address+"/performance", nil)
+	addresses, err := g.registry.ServiceAddresses(ctx, "sport")
+	if err != nil {
+		return model.WorkoutPerformance{}, err
+	}
+	url := "http://" + addresses[rand.Intn(len(addresses))] + "/performance"
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return model.WorkoutPerformance{}, err
 	}

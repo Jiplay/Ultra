@@ -16,7 +16,7 @@ type Handler struct {
 
 func New(ctrl *sport.Controller) *Handler { return &Handler{ctrl} }
 
-func (h *Handler) GetWorkoutPlans(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetWorkout(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -35,7 +35,7 @@ func (h *Handler) GetWorkoutPlans(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) GetPerformances(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetPerformance(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
 		w.WriteHeader(http.StatusBadRequest)

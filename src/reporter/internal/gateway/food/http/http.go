@@ -4,19 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"ultra.com/food/pkg/model"
-	gateway "ultra.com/reporter/internal/gateway/sport"
+	"ultra.com/pkg/discovery"
+	"ultra.com/reporter/internal/gateway"
 )
 
 type Gateway struct {
-	address string
+	registry discovery.Registry
 }
 
-func New(address string) *Gateway { return &Gateway{address: address} }
+func New(registry discovery.Registry) *Gateway { return &Gateway{registry} }
 
 func (g *Gateway) GetRecipe(ctx context.Context, id model.RecipeID) (model.Recipe, error) {
-	req, err := http.NewRequest("GET", g.address+"/recipe", nil)
+	addresses, err := g.registry.ServiceAddresses(ctx, "food")
+	if err != nil {
+		return model.Recipe{}, err
+	}
+	url := "http://" + addresses[rand.Intn(len(addresses))] + "/recipe"
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return model.Recipe{}, err
 	}
