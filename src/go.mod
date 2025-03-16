@@ -2,7 +2,11 @@ module ultra.com
 
 go 1.24.0
 
-require github.com/hashicorp/consul/api v1.31.2
+require (
+	github.com/hashicorp/consul/api v1.31.2
+	google.golang.org/grpc v1.71.0
+	google.golang.org/protobuf v1.36.5
+)
 
 require (
 	github.com/armon/go-metrics v0.4.1 // indirect
@@ -20,5 +24,8 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8 // indirect
+	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 )

@@ -32,9 +32,9 @@ type WorkoutPerformance struct {
 }
 
 type ExercisesPerformance struct {
-	ID          ExercisePerformanceID `json:"id"`
-	Date        time.Time             `json:"date"`
-	Weight      uint16                `json:"weight"`
-	Repetitions uint8                 `json:"repetitions"`
-	RestTime    uint16                `json:"rest_time"`
+	ID ExercisePerformanceID `json:"id"`
+	//Date        time.Time             `json:"date"`
+	Weight      uint16 `json:"weight"`
+	Repetitions uint8  `json:"repetitions"`
+	RestTime    uint16 `json:"rest_time"`
 }

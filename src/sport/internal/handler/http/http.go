@@ -22,7 +22,7 @@ func (h *Handler) GetWorkout(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 	ctx := r.Context()
-	p, err := h.ctrl.GetPlan(ctx, model.WorkoutID(id))
+	p, err := h.ctrl.GetWorkout(ctx, model.WorkoutID(id))
 	if err != nil && errors.Is(err, repository.ErrNotFound) {
 		w.WriteHeader(http.StatusNotFound)
 	} else if err != nil {

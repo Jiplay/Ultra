@@ -4,12 +4,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"log"
-	"net/http"
+	"net"
 	"time"
 	"ultra.com/food/internal/controller/food"
-	httphandler "ultra.com/food/internal/handler/http"
+	grpchandler "ultra.com/food/internal/handler/grpc"
 	"ultra.com/food/internal/repository/memory"
+	"ultra.com/gen"
 	"ultra.com/pkg/discovery"
 	"ultra.com/pkg/discovery/consul"
 )
@@ -19,6 +22,7 @@ const serviceName = "food"
 func main() {
 	var port int
 	flag.IntVar(&port, "port", 8081, "API listen on")
+	flag.Parse()
 	log.Printf("Starting the food service on port %d", port)
 	registry, err := consul.NewRegistry("localhost:8500")
 	if err != nil {
@@ -40,9 +44,14 @@ func main() {
 	defer registry.Deregister(ctx, instanceID, serviceName)
 	repo := memory.New()
 	ctrl := food.New(repo)
-	h := httphandler.New(ctrl)
-	http.Handle("/recipe", http.HandlerFunc(h.GetRecipe))
-	if err := http.ListenAndServe(":8081", nil); err != nil {
-		panic(err)
+	h := grpchandler.New(ctrl)
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", port))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	srv := grpc.NewServer()
+	reflection.Register(srv)
+	gen.RegisterFoodServiceServer(srv, h)
+	if err := srv.Serve(lis); err != nil {
 	}
 }

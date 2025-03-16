@@ -21,7 +21,7 @@ func New(repo sportRepository) *Controller {
 	return &Controller{repo}
 }
 
-func (c *Controller) GetPlan(ctx context.Context, id model.WorkoutID) (*model.Workout, error) {
+func (c *Controller) GetWorkout(ctx context.Context, id model.WorkoutID) (*model.Workout, error) {
 	plan, err := c.repo.GetPlan(ctx, id)
 	if err != nil && errors.Is(err, ErrNotFound) {
 		return nil, ErrNotFound
