@@ -53,9 +53,15 @@ docker pull "${IMAGE}" || {
     exit 1
 }
 
+# Tag the image as latest for docker-compose
+if [ "${TAG}" != "latest" ]; then
+    print_status "Tagging image as latest for docker-compose..."
+    docker tag "${IMAGE}" "${REGISTRY}/${USERNAME}/${REPO}:latest"
+fi
+
 # Stop existing containers
 print_status "Stopping existing containers..."
-docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
+docker compose -f docker-compose.prod.yml down 2>/dev/null || true
 
 # Remove old volumes if requested
 if [ "$2" = "--fresh" ]; then
@@ -65,7 +71,7 @@ fi
 
 # Start services
 print_status "Starting Ultra API stack..."
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # Wait for services to start
 print_status "Waiting for services to start..."
@@ -78,7 +84,7 @@ print_info() {
 BLUE='\033[0;34m'
 
 print_info "Checking PostgreSQL..."
-if docker-compose -f docker-compose.prod.yml exec postgres pg_isready -U ultra_user > /dev/null 2>&1; then
+if docker compose -f docker-compose.prod.yml exec postgres pg_isready -U ultra_user > /dev/null 2>&1; then
     print_status "PostgreSQL is healthy"
 else
     print_error "PostgreSQL is not ready"
@@ -86,7 +92,7 @@ fi
 
 # Check MongoDB
 print_info "Checking MongoDB..."
-if docker-compose -f docker-compose.prod.yml exec mongodb mongosh --eval "db.adminCommand('ping')" > /dev/null 2>&1; then
+if docker compose -f docker-compose.prod.yml exec mongodb mongosh --eval "db.adminCommand('ping')" > /dev/null 2>&1; then
     print_status "MongoDB is healthy"
 else
     print_error "MongoDB is not ready"
@@ -101,13 +107,13 @@ elif curl -f http://localhost/health > /dev/null 2>&1; then
     print_status "Ultra API is running behind Nginx!"
 else
     print_error "Ultra API is not responding. Checking logs..."
-    docker-compose -f docker-compose.prod.yml logs --tail=50 ultra-api
+    docker compose -f docker-compose.prod.yml logs --tail=50 ultra-api
     exit 1
 fi
 
 # Show running containers
 print_status "Running containers:"
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # Show useful information
 echo ""
@@ -118,10 +124,10 @@ echo "   Health: http://$(curl -s ifconfig.me || echo 'your-server-ip')/health"
 echo "   API:    http://$(curl -s ifconfig.me || echo 'your-server-ip')/api/v1/"
 echo ""
 echo "🔧 Management commands:"
-echo "   View logs: docker-compose -f docker-compose.prod.yml logs -f"
-echo "   Stop all:  docker-compose -f docker-compose.prod.yml down"
-echo "   Restart:   docker-compose -f docker-compose.prod.yml restart"
+echo "   View logs: docker compose -f docker-compose.prod.yml logs -f"
+echo "   Stop all:  docker compose -f docker-compose.prod.yml down"
+echo "   Restart:   docker compose -f docker-compose.prod.yml restart"
 echo ""
 echo "💾 Database access:"
-echo "   PostgreSQL: docker-compose -f docker-compose.prod.yml exec postgres psql -U ultra_user -d ultra_db"
-echo "   MongoDB:    docker-compose -f docker-compose.prod.yml exec mongodb mongosh -u ultra_user -p"
+echo "   PostgreSQL: docker compose -f docker-compose.prod.yml exec postgres psql -U ultra_user -d ultra_db"
+echo "   MongoDB:    docker compose -f docker-compose.prod.yml exec mongodb mongosh -u ultra_user -p"

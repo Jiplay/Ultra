@@ -1,0 +1,75 @@
+version: '3.8'
+
+# Docker Compose override for development
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  # Development overrides for Ultra API
+  ultra-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder  # Stop at builder stage for development
+    volumes:
+      - .:/app:cached
+      - /app/vendor  # Exclude vendor directory
+    environment:
+      - GO_ENV=development
+      - DEBUG=true
+    command: go run main.go  # Run directly with go run for hot reload
+    stdin_open: true
+    tty: true
+
+  # Development overrides for PostgreSQL
+  postgres:
+    environment:
+      - POSTGRES_LOG_STATEMENT=all  # Log all SQL statements
+      - POSTGRES_LOG_MIN_MESSAGES=debug1
+    ports:
+      - "5432:5432"  # Expose for local development tools
+
+  # Development overrides for MongoDB
+  mongo:
+    environment:
+      - MONGO_LOG_LEVEL=debug
+    ports:
+      - "27017:27017"  # Expose for local development tools
+
+  # Development services
+  mailcatcher:
+    image: schickling/mailcatcher
+    container_name: ultra_mailcatcher
+    ports:
+      - "1080:1080"  # Web interface
+      - "1025:1025"  # SMTP
+    networks:
+      - ultra-network
+
+  # Redis for caching/sessions in development
+  redis:
+    image: redis:7-alpine
+    container_name: ultra_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ultra-network
+    command: redis-server --appendonly yes
+
+  # Redis Commander for Redis management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: ultra_redis_commander
+    ports:
+      - "8083:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    networks:
+      - ultra-network
+    depends_on:
+      - redis
+
+volumes:
+  redis_data:
+    driver: local

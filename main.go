@@ -4,13 +4,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
-
 	"ultra/config"
 	"ultra/database"
 	"ultra/nutrition"
 	"ultra/programs"
-	"ultra/users"
 )
 
 func main() {
@@ -28,61 +25,31 @@ func main() {
 	}
 
 	// Set up router
-	router := mux.NewRouter()
-
-	// API versioning
-	apiRouter := router.PathPrefix("/api/v1").Subrouter()
+	mux := http.NewServeMux()
 
 	// Health check
-	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok","message":"Ultra API is running"}`))
-	}).Methods("GET")
+	})
 
 	// Register routes
-	users.RegisterRoutes(apiRouter)
-	programs.RegisterRoutes(apiRouter)
-	nutrition.RegisterRoutes(apiRouter)
+	nutrition.Setup(database.PostgresDB, mux)
+	programs.Setup(database.PostgresDB, mux)
 
-	// CORS middleware
-	router.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-User-ID")
-
-			if r.Method == "OPTIONS" {
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	})
-
-	// Logging middleware
-	router.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Printf("%s %s %s", r.Method, r.RequestURI, r.RemoteAddr)
-			next.ServeHTTP(w, r)
-		})
-	})
+	// Create server with middleware
+	handler := corsMiddleware(loggingMiddleware(mux))
 
 	log.Printf("Server starting on port %s", cfg.Port)
 	log.Printf("MongoDB connected")
 	log.Printf("PostgreSQL connected and tables initialized")
 	log.Printf("Available endpoints:")
 	log.Printf("  GET  /health")
-	log.Printf("  POST /api/v1/users")
-	log.Printf("  GET  /api/v1/users/{id}")
-	log.Printf("  PUT  /api/v1/users/{id}")
-	log.Printf("  DEL  /api/v1/users/{id}")
-	log.Printf("  POST /api/v1/programs")
-	log.Printf("  GET  /api/v1/programs")
-	log.Printf("  GET  /api/v1/programs/{id}")
-	log.Printf("  PUT  /api/v1/programs/{id}")
-	log.Printf("  DEL  /api/v1/programs/{id}")
 	log.Printf("  POST /api/v1/nutrition/foods")
 	log.Printf("  GET  /api/v1/nutrition/foods")
 	log.Printf("  GET  /api/v1/nutrition/foods/{id}")
@@ -91,8 +58,36 @@ func main() {
 	log.Printf("  GET  /api/v1/nutrition/recipes/{id}")
 	log.Printf("  GET  /api/v1/nutrition/goals/{user_id}")
 	log.Printf("  PUT  /api/v1/nutrition/goals/{user_id}")
+	log.Printf("  POST /api/v1/programs")
+	log.Printf("  GET  /api/v1/programs")
+	log.Printf("  GET  /api/v1/programs/{id}")
+	log.Printf("  PUT  /api/v1/programs/{id}")
+	log.Printf("  DEL  /api/v1/programs/{id}")
+	log.Printf("Note: Users module needs similar refactoring to work with standard http package")
 
-	if err := http.ListenAndServe(":"+cfg.Port, router); err != nil {
+	if err := http.ListenAndServe(":"+cfg.Port, handler); err != nil {
 		log.Fatal("Server failed to start:", err)
 	}
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-User-ID")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s %s", r.Method, r.RequestURI, r.RemoteAddr)
+		next.ServeHTTP(w, r)
+	})
 }

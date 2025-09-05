@@ -1,0 +1,264 @@
+### Health Check
+GET http://localhost:8080/health
+
+### ===========================================
+### FOODS ENDPOINTS
+### ===========================================
+
+### Create Food - Apple
+POST http://localhost:8080/api/v1/nutrition/foods
+Content-Type: application/json
+X-User-ID: user123
+
+{
+    "name": "Apple",
+    "calories_per_100g": 52,
+    "protein_per_100g": 0.3,
+    "carbs_per_100g": 14.0,
+    "fat_per_100g": 0.2,
+    "fiber_per_100g": 2.4
+}
+
+### Create Food - Chicken Breast
+POST http://localhost:8080/api/v1/nutrition/foods
+Content-Type: application/json
+X-User-ID: user123
+
+{
+    "name": "Chicken Breast",
+    "calories_per_100g": 165,
+    "protein_per_100g": 31.0,
+    "carbs_per_100g": 0.0,
+    "fat_per_100g": 3.6,
+    "fiber_per_100g": 0.0
+}
+
+### Create Food - Brown Rice
+POST http://localhost:8080/api/v1/nutrition/foods
+Content-Type: application/json
+X-User-ID: user123
+
+{
+    "name": "Brown Rice",
+    "calories_per_100g": 123,
+    "protein_per_100g": 2.6,
+    "carbs_per_100g": 23.0,
+    "fat_per_100g": 0.9,
+    "fiber_per_100g": 1.8
+}
+
+### Get All Foods
+GET http://localhost:8080/api/v1/nutrition/foods
+
+### Search Foods by Name
+GET http://localhost:8080/api/v1/nutrition/foods?search=chicken
+
+### Get Food by ID (replace 1 with actual food ID)
+GET http://localhost:8080/api/v1/nutrition/foods/
+
+### Get Food by ID (replace 2 with actual food ID)
+GET http://localhost:8080/api/v1/nutrition/foods/2
+
+### ===========================================
+### RECIPES ENDPOINTS
+### ===========================================
+
+### Create Recipe - Chicken and Rice Bowl
+POST http://localhost:8080/api/v1/nutrition/recipes
+Content-Type: application/json
+X-User-ID: user123
+
+{
+    "name": "Chicken and Rice Bowl",
+    "description": "Healthy protein-rich meal with chicken and brown rice",
+    "instructions": "1. Cook brown rice according to package instructions. 2. Season and grill chicken breast. 3. Slice chicken and serve over rice.",
+    "servings": 2,
+    "prep_time": 15,
+    "cook_time": 25,
+    "ingredients": [
+        {
+            "food_id": 2,
+            "quantity": 200,
+            "unit": "g"
+        },
+        {
+            "food_id": 3,
+            "quantity": 150,
+            "unit": "g"
+        }
+    ]
+}
+
+### Create Recipe - Apple Snack
+POST http://localhost:8080/api/v1/nutrition/recipes
+Content-Type: application/json
+X-User-ID: user123
+
+{
+    "name": "Apple Snack",
+    "description": "Simple healthy snack",
+    "instructions": "Wash apple and slice into wedges",
+    "servings": 1,
+    "prep_time": 5,
+    "cook_time": 0,
+    "ingredients": [
+        {
+            "food_id": 1,
+            "quantity": 150,
+            "unit": "g"
+        }
+    ]
+}
+
+### Get All Recipes for User
+GET http://localhost:8080/api/v1/nutrition/recipes?user_id=user123
+
+### Get Recipe by ID (replace 1 with actual recipe ID)
+GET http://localhost:8080/api/v1/nutrition/recipes/1?user_id=user123
+
+### Get Recipe by ID (replace 2 with actual recipe ID)
+GET http://localhost:8080/api/v1/nutrition/recipes/2?user_id=user123
+
+### ===========================================
+### NUTRITION GOALS ENDPOINTS
+### ===========================================
+
+### Create/Update Nutrition Goals - Full Update
+PUT http://localhost:8080/api/v1/nutrition/goals/user123
+Content-Type: application/json
+
+{
+    "daily_calories": 2200,
+    "daily_protein": 165.0,
+    "daily_carbs": 275.0,
+    "daily_fat": 73.0,
+    "daily_fiber": 28.0
+}
+
+### Update Nutrition Goals - Partial Update (calories only)
+PUT http://localhost:8080/api/v1/nutrition/goals/user123
+Content-Type: application/json
+
+{
+    "daily_calories": 2400
+}
+
+### Update Nutrition Goals - Partial Update (protein and carbs)
+PUT http://localhost:8080/api/v1/nutrition/goals/user123
+Content-Type: application/json
+
+{
+    "daily_protein": 180.0,
+    "daily_carbs": 300.0
+}
+
+### Get Nutrition Goals for User
+GET http://localhost:8080/api/v1/nutrition/goals/user123
+
+### ===========================================
+### ERROR TESTING
+### ===========================================
+
+### Test Invalid Food ID
+GET http://localhost:8080/api/v1/nutrition/foods/999
+
+### Test Invalid Recipe ID
+GET http://localhost:8080/api/v1/nutrition/recipes/999?user_id=user123
+
+### Test Missing User ID for Recipes
+GET http://localhost:8080/api/v1/nutrition/recipes
+
+### Test Invalid User ID for Goals
+GET http://localhost:8080/api/v1/nutrition/goals/nonexistent-user
+
+### Test Invalid JSON for Food Creation
+POST http://localhost:8080/api/v1/nutrition/foods
+Content-Type: application/json
+X-User-ID: user123
+
+{
+    "name": "Invalid Food"
+    // Missing comma and invalid JSON
+}
+
+### Test Missing Required Fields for Food
+POST http://localhost:8080/api/v1/nutrition/foods
+Content-Type: application/json
+X-User-ID: user123
+
+{
+    "protein_per_100g": 10.0
+    // Missing required name and calories_per_100g
+}
+
+### Test Missing User ID Header for Food Creation
+POST http://localhost:8080/api/v1/nutrition/foods
+Content-Type: application/json
+
+{
+    "name": "Test Food",
+    "calories_per_100g": 100
+}
+
+### Test Invalid Method - POST to Foods ID endpoint
+POST http://localhost:8080/api/v1/nutrition/foods/1
+
+### Test Invalid Method - DELETE on Foods
+DELETE http://localhost:8080/api/v1/nutrition/foods
+
+### ===========================================
+### DIFFERENT USER TESTING
+### ===========================================
+
+### Create Food as Different User
+POST http://localhost:8080/api/v1/nutrition/foods
+Content-Type: application/json
+X-User-ID: user456
+
+{
+    "name": "Banana",
+    "calories_per_100g": 89,
+    "protein_per_100g": 1.1,
+    "carbs_per_100g": 23.0,
+    "fat_per_100g": 0.3,
+    "fiber_per_100g": 2.6
+}
+
+### Create Recipe as Different User
+POST http://localhost:8080/api/v1/nutrition/recipes
+Content-Type: application/json
+X-User-ID: user456
+
+{
+    "name": "Banana Smoothie",
+    "description": "Simple banana smoothie",
+    "instructions": "Blend banana with milk",
+    "servings": 1,
+    "prep_time": 5,
+    "cook_time": 0,
+    "ingredients": [
+        {
+            "food_id": 4,
+            "quantity": 120,
+            "unit": "g"
+        }
+    ]
+}
+
+### Get Recipes for Different User
+GET http://localhost:8080/api/v1/nutrition/recipes?user_id=user456
+
+### Set Goals for Different User
+PUT http://localhost:8080/api/v1/nutrition/goals/user456
+Content-Type: application/json
+
+{
+    "daily_calories": 1800,
+    "daily_protein": 120.0,
+    "daily_carbs": 225.0,
+    "daily_fat": 60.0,
+    "daily_fiber": 25.0
+}
+
+### Get Goals for Different User
+GET http://localhost:8080/api/v1/nutrition/goals/user456
