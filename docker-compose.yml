@@ -2,38 +2,38 @@ version: '3.8'
 
 services:
   # Ultra API Application
-  ultra-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: ultra_api
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    env_file:
-      - .env
-    environment:
-      # Override for containerized environment
-      - MONGODB_URI=mongodb://ultra_user:ultra_password@mongo:27017/ultra?authSource=admin
-      - POSTGRES_HOST=postgres
-    depends_on:
-      postgres:
-        condition: service_healthy
-      mongo:
-        condition: service_healthy
-    networks:
-      - ultra-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+#  ultra-api:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: ultra_api
+#    restart: unless-stopped
+#    ports:
+#      - "8080:8080"
+#    env_file:
+#      - .env
+#    environment:
+#      # Override for containerized environment
+#      - MONGODB_URI=mongodb://ultra_user:ultra_password@mongo:27017/ultra?authSource=admin
+#      - POSTGRES_HOST=postgres
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      mongo:
+#        condition: service_healthy
+#    networks:
+#      - ultra-network
+#    healthcheck:
+#      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 30s
+#    logging:
+#      driver: json-file
+#      options:
+#        max-size: "10m"
+#        max-file: "3"
 
   # PostgreSQL Database
   postgres:
