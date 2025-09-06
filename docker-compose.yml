@@ -1,138 +1,71 @@
-version: '3.8'
-
 services:
-  # Ultra API Application
-#  ultra-api:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    container_name: ultra_api
-#    restart: unless-stopped
-#    ports:
-#      - "8080:8080"
-#    env_file:
-#      - .env
-#    environment:
-#      # Override for containerized environment
-#      - MONGODB_URI=mongodb://ultra_user:ultra_password@mongo:27017/ultra?authSource=admin
-#      - POSTGRES_HOST=postgres
-#    depends_on:
-#      postgres:
-#        condition: service_healthy
-#      mongo:
-#        condition: service_healthy
-#    networks:
-#      - ultra-network
-#    healthcheck:
-#      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
-#      interval: 30s
-#      timeout: 10s
-#      retries: 3
-#      start_period: 30s
-#    logging:
-#      driver: json-file
-#      options:
-#        max-size: "10m"
-#        max-file: "3"
-
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    container_name: ultra_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ultra_user
-      POSTGRES_PASSWORD: ultra_password
-      POSTGRES_DB: ultra_db
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
-      PGDATA: /var/lib/postgresql/data/pgdata
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database/postgres-init:/docker-entrypoint-initdb.d:ro
-    networks:
-      - ultra-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ultra_user -d ultra_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    security_opt:
-      - no-new-privileges:true
-
-  # MongoDB Database
-  mongo:
-    image: mongo:7-jammy
-    container_name: ultra_mongo
+  mongodb:
+    image: mongo:7.0
+    container_name: ultra-mongodb
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ultra_user
       MONGO_INITDB_ROOT_PASSWORD: ultra_password
       MONGO_INITDB_DATABASE: ultra
+    ports:
+      - "27017:27017"
     volumes:
-      - mongo_data:/data/db
-      - mongo_config:/data/configdb
-      - ./database/mongo-init:/docker-entrypoint-initdb.d:ro
+      - mongodb_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
+    networks:
+      - ultra-network
+
+  postgres:
+    image: postgres:16
+    container_name: ultra-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ultra_user
+      POSTGRES_PASSWORD: ultra_password
+      POSTGRES_DB: ultra_db
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
     networks:
       - ultra-network
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD-SHELL", "pg_isready -U ultra_user -d ultra_db"]
+      interval: 30s
+      timeout: 10s
       retries: 5
-      start_period: 30s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    security_opt:
-      - no-new-privileges:true
 
-  # Adminer - Database Management Tool
-  adminer:
-    image: adminer:latest
-    container_name: ultra_adminer
+  # Application service (uses locally built image)
+  app:
+    image: ultra:latest
+    container_name: ultra-app
     restart: unless-stopped
-    ports:
-      - "8081:8080"
-    environment:
-      - ADMINER_DEFAULT_SERVER=postgres
-    networks:
-      - ultra-network
-
-  # Mongo Express - MongoDB Management Tool
-  mongo-express:
-    image: mongo-express:latest
-    container_name: ultra_mongo_express
-    restart: unless-stopped
-    ports:
-      - "8082:8081"
-    environment:
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=ultra_user
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=ultra_password
-      - ME_CONFIG_MONGODB_SERVER=mongo
-      - ME_CONFIG_MONGODB_PORT=27017
-      - ME_CONFIG_BASICAUTH_USERNAME=admin
-      - ME_CONFIG_BASICAUTH_PASSWORD=admin
     depends_on:
-      - mongo
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    environment:
+      MONGODB_URI: mongodb://ultra_user:ultra_password@mongodb:27017/ultra?authSource=admin
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ultra_user
+      POSTGRES_PASSWORD: ultra_password
+      POSTGRES_DB: ultra_db
+      POSTGRES_SSL: disable
+      PORT: 8080
+      JWT_SECRET: your-secret-key-here
+    ports:
+      - "8080:8080"
     networks:
       - ultra-network
+
+volumes:
+  mongodb_data:
+  postgres_data:
 
 networks:
   ultra-network:
     driver: bridge
-
-volumes:
-  postgres_data:
-    driver: local
-  mongo_data:
-    driver: local
-  mongo_config:
-    driver: local

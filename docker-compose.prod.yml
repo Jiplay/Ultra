@@ -1,103 +1,71 @@
-version: '3.8'
-
-# Production configuration - uses pre-built images
-# Use with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
-
 services:
-  ultra-api:
-    image: ghcr.io/jiplay/ultra:latest
-    container_name: ultra_api_prod
+  mongodb:
+    image: mongo:7.0
+    container_name: ultra-mongodb
     restart: unless-stopped
     environment:
-      - MONGODB_URI=mongodb://ultra_user:$${MONGO_PASSWORD}@mongo:27017/ultra?authSource=admin
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=ultra_user
-      - POSTGRES_PASSWORD=$${POSTGRES_PASSWORD}
-      - POSTGRES_DB=ultra_db
-      - POSTGRES_SSL=disable
-      - PORT=8080
-      - JWT_SECRET=$${JWT_SECRET}
-      - GO_ENV=production
-      - LOG_LEVEL=info
-    depends_on:
-      postgres:
-        condition: service_healthy
-      mongo:
-        condition: service_healthy
+      MONGO_INITDB_ROOT_USERNAME: ultra_user
+      MONGO_INITDB_ROOT_PASSWORD: ultra_password
+      MONGO_INITDB_DATABASE: ultra
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
+    networks:
+      - ultra-network
+
+  postgres:
+    image: postgres:16
+    container_name: ultra-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ultra_user
+      POSTGRES_PASSWORD: ultra_password
+      POSTGRES_DB: ultra_db
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
     networks:
       - ultra-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD-SHELL", "pg_isready -U ultra_user -d ultra_db"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "5"
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
-        reservations:
-          memory: 256M
-          cpus: '0.25'
+      retries: 5
 
-  postgres:
-    environment:
-      POSTGRES_PASSWORD: $${POSTGRES_PASSWORD}
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "3"
-
-  mongo:
-    environment:
-      MONGO_INITDB_ROOT_PASSWORD: $${MONGO_PASSWORD}
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "3"
-
-  nginx:
-    image: nginx:alpine
-    container_name: ultra_nginx_prod
+  # Application service (pulls from GitHub registry)
+  app:
+    image: ghcr.io/${GITHUB_REPOSITORY}:latest
+    container_name: ultra-app
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
-      - nginx_logs:/var/log/nginx
     depends_on:
-      - ultra-api
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    environment:
+      MONGODB_URI: mongodb://ultra_user:ultra_password@mongodb:27017/ultra?authSource=admin
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ultra_user
+      POSTGRES_PASSWORD: ultra_password
+      POSTGRES_DB: ultra_db
+      POSTGRES_SSL: disable
+      PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-here}
+    ports:
+      - "8080:8080"
     networks:
       - ultra-network
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "3"
+
+volumes:
+  mongodb_data:
+  postgres_data:
+
+networks:
+  ultra-network:
+    driver: bridge
