@@ -48,16 +48,17 @@ jobs:
         tags: |
           # Tag as 'latest' for main branch
           type=raw,value=latest,enable={{is_default_branch}}
-          # Tag with branch name for develop and other branches
-          type=ref,event=branch,enable={{is_default_branch == false}}
+          # Tag with branch name for non-main branches
+          type=ref,event=branch
           # Tag with PR number for pull requests
           type=ref,event=pr
           # Tag with version for semantic version tags (v1.0.0)
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
           type=semver,pattern={{major}}
-          # Tag with commit SHA for traceability (optional)
-          type=sha,prefix={{branch}}-,enable={{is_default_branch == false}}
+        flavor: |
+          # Don't tag main branch with branch name (since we use 'latest')
+          latest=false
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
