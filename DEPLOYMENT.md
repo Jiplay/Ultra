@@ -7,7 +7,7 @@ This guide explains how to deploy the Ultra API using Docker containers in produ
 The application consists of three main components:
 - **Ultra API**: Go application serving REST endpoints
 - **MongoDB**: Document database for user data
-- **PostgreSQL**: Relational database for nutrition, programs, and meal data
+- **PostgreSQL 15**: Relational database for nutrition, programs, and meal data (optimized for ARM64 compatibility)
 
 ## Prerequisites
 

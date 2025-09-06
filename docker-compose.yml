@@ -16,14 +16,14 @@ services:
       - ultra-network
 
   postgres:
-    image: postgres:16
+    image: postgres:15
     container_name: ultra-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ultra_user
       POSTGRES_PASSWORD: ultra_password
       POSTGRES_DB: ultra_db
-      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+      POSTGRES_INITDB_ARGS: "--auth-host=md5 --auth-local=md5"
     ports:
       - "5432:5432"
     volumes:
