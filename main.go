@@ -6,8 +6,10 @@ import (
 
 	"ultra/config"
 	"ultra/database"
+	"ultra/meal"
 	"ultra/nutrition"
 	"ultra/programs"
+	"ultra/users"
 )
 
 func main() {
@@ -41,6 +43,8 @@ func main() {
 	// Register routes
 	nutrition.Setup(database.PostgresDB, mux)
 	programs.Setup(database.PostgresDB, mux)
+	meal.Setup(database.PostgresDB, mux)
+	users.Setup(database.MongoDB, mux)
 
 	// Create server with middleware
 	handler := corsMiddleware(loggingMiddleware(mux))
@@ -63,7 +67,21 @@ func main() {
 	log.Printf("  GET  /api/v1/programs/{id}")
 	log.Printf("  PUT  /api/v1/programs/{id}")
 	log.Printf("  DEL  /api/v1/programs/{id}")
-	log.Printf("Note: Users module needs similar refactoring to work with standard http package")
+	log.Printf("  POST /api/v1/meals")
+	log.Printf("  GET  /api/v1/meals")
+	log.Printf("  GET  /api/v1/meals/{id}")
+	log.Printf("  PUT  /api/v1/meals/{id}")
+	log.Printf("  DEL  /api/v1/meals/{id}")
+	log.Printf("  GET  /api/v1/meals/daily")
+	log.Printf("  GET  /api/v1/meals/summary")
+	log.Printf("  GET  /api/v1/meals/plan")
+	log.Printf("  POST /api/v1/meals/{id}/items")
+	log.Printf("  PUT  /api/v1/meals/{id}/items/{item_id}")
+	log.Printf("  DEL  /api/v1/meals/{id}/items/{item_id}")
+	log.Printf("  POST /api/v1/users")
+	log.Printf("  GET  /api/v1/users/{id}")
+	log.Printf("  PUT  /api/v1/users/{id}")
+	log.Printf("  DEL  /api/v1/users/{id}")
 
 	if err := http.ListenAndServe(":"+cfg.Port, handler); err != nil {
 		log.Fatal("Server failed to start:", err)

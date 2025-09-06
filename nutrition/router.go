@@ -18,6 +18,7 @@ func RegisterRoutes(mux *http.ServeMux, handlers *Handlers) {
 		}
 	})
 
+	// Might be useless for now
 	mux.HandleFunc("/api/v1/nutrition/foods/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/api/v1/nutrition/foods/") {
 			handlers.GetFood(w, r)
@@ -37,7 +38,7 @@ func RegisterRoutes(mux *http.ServeMux, handlers *Handlers) {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
-	
+
 	// Nutrition Goals
 	mux.HandleFunc("/api/v1/nutrition/goals/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/v1/nutrition/goals/") {

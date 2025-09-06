@@ -1,43 +1,67 @@
-# Ultra API - Docker Guide
+# Ultra API - Docker Setup Guide
 
-This guide covers how to run the Ultra API using Docker and Docker Compose.
-
-## Prerequisites
-
-- Docker Engine 20.10+
-- Docker Compose 2.0+
-- Make (optional, for convenience commands)
+This document explains how to run Ultra API with Docker in various environments.
 
 ## Quick Start
 
-### 1. Using Make (Recommended)
-
 ```bash
-# Start development environment
-make dev
+# 1. Set up environment
+make setup  # Creates .env from .env.example
 
-# Or start in background
-make dev-bg
+# 2. Start development environment
+make dev    # Starts with hot reload, dev tools, and exposed ports
 
-# Start with additional development tools
-make dev-full
-
-# Stop everything
-make down
+# 3. Check status
+make status
 ```
 
-### 2. Using Docker Compose Directly
+## Architecture Overview
 
-```bash
-# Start all services
-docker-compose up --build
+The Ultra API uses a microservices architecture with the following components:
 
-# Start in background
-docker-compose up -d --build
+- **Ultra API**: Go application (port 8080)
+- **PostgreSQL**: Primary database for nutrition, meals, programs (port 5432)
+- **MongoDB**: User data and sessions (port 27017)
+- **Development Tools** (dev mode only):
+  - Adminer: PostgreSQL management (port 8081)
+  - Mongo Express: MongoDB management (port 8082)
+  - Redis: Caching (port 6379)
+  - Redis Commander: Redis management (port 8083)
+  - MailCatcher: Email testing (port 1080)
 
-# Stop services
-docker-compose down
-```
+## Environment Configurations
+
+### 1. Development Environment
+
+**Command**: `make dev` or `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up`
+
+**Features**:
+- Hot reload with `go run`
+- Race detector enabled
+- Verbose logging
+- All database ports exposed
+- Development tools included
+- Source code mounted as volume
+
+**Access**:
+- API: http://localhost:8080
+- PostgreSQL: localhost:5432
+- MongoDB: localhost:27017
+- Adminer: http://localhost:8081
+- Mongo Express: http://localhost:8082
+
+### 2. Production Environment
+
+**Command**: `make prod` or `docker-compose -f docker-compose.yml -f docker-compose.prod.yml up`
+
+**Features**:
+- Uses pre-built image from GitHub Container Registry
+- Resource limits and health checks
+- Production logging configuration
+- No exposed database ports
+- Nginx reverse proxy (if configured)
+
+**Image**: `ghcr.io/jiplay/ultra:latest`
 
 ## Available Services
 

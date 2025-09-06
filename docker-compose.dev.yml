@@ -12,28 +12,32 @@ services:
       target: builder  # Stop at builder stage for development
     volumes:
       - .:/app:cached
-      - /app/vendor  # Exclude vendor directory
+      - go_modules_cache:/go/pkg/mod  # Cache Go modules
     environment:
       - GO_ENV=development
       - DEBUG=true
-    command: go run main.go  # Run directly with go run for hot reload
+      - LOG_LEVEL=debug
+    command: go run -race main.go  # Run with race detector in dev
     stdin_open: true
     tty: true
+    ports:
+      - "8080:8080"  # Explicit port mapping for clarity
 
   # Development overrides for PostgreSQL
   postgres:
     environment:
       - POSTGRES_LOG_STATEMENT=all  # Log all SQL statements
-      - POSTGRES_LOG_MIN_MESSAGES=debug1
+      - POSTGRES_LOG_MIN_MESSAGES=info
+      - POSTGRES_LOG_DURATION=on
     ports:
       - "5432:5432"  # Expose for local development tools
+    command: postgres -c log_statement=all -c log_connections=on -c log_disconnections=on
 
   # Development overrides for MongoDB
   mongo:
-    environment:
-      - MONGO_LOG_LEVEL=debug
     ports:
       - "27017:27017"  # Expose for local development tools
+    command: mongod --logpath /var/log/mongodb/mongod.log --logappend --verbose
 
   # Development services
   mailcatcher:
@@ -72,4 +76,6 @@ services:
 
 volumes:
   redis_data:
+    driver: local
+  go_modules_cache:
     driver: local

@@ -1,111 +1,69 @@
 package users
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
-	"time"
-
-	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-
-	"ultra/database"
+	"strings"
 )
 
-func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
+type Handler struct {
+	controller *Controller
+}
+
+func NewHandler(controller *Controller) *Handler {
+	return &Handler{controller: controller}
+}
+
+func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	// Check if user already exists
-	collection := database.MongoDB.Collection("users")
-	var existingUser User
-	err := collection.FindOne(context.Background(), bson.M{"email": req.Email}).Decode(&existingUser)
-	if err == nil {
-		http.Error(w, "User already exists", http.StatusConflict)
-		return
-	}
-
-	user := User{
-		Email:     req.Email,
-		Name:      req.Name,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	result, err := collection.InsertOne(context.Background(), user)
+	user, err := h.controller.CreateUser(&req)
 	if err != nil {
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		statusCode := http.StatusInternalServerError
+		if err.Error() == "user already exists" {
+			statusCode = http.StatusConflict
+		} else if err.Error() == "email is required" || err.Error() == "name is required" {
+			statusCode = http.StatusBadRequest
+		}
+		http.Error(w, err.Error(), statusCode)
 		return
-	}
-
-	user.ID = result.InsertedID.(primitive.ObjectID)
-
-	response := UserResponse{
-		ID:        user.ID.Hex(),
-		Email:     user.Email,
-		Name:      user.Name,
-		Weight:    user.Weight,
-		Height:    user.Height,
-		Age:       user.Age,
-		Picture:   user.Picture,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(user)
 }
 
-func GetUserHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userID := vars["id"]
-
-	objectID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
+func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
+	userID := h.extractIDFromPath(r.URL.Path)
+	if userID == "" {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
 
-	collection := database.MongoDB.Collection("users")
-	var user User
-	err = collection.FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&user)
+	user, err := h.controller.GetUserByID(userID)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			http.Error(w, "User not found", http.StatusNotFound)
-			return
+		statusCode := http.StatusInternalServerError
+		if err.Error() == "invalid user ID" {
+			statusCode = http.StatusBadRequest
+		} else if err.Error() == "user not found" {
+			statusCode = http.StatusNotFound
 		}
-		http.Error(w, "Failed to get user", http.StatusInternalServerError)
+		http.Error(w, err.Error(), statusCode)
 		return
 	}
 
-	response := UserResponse{
-		ID:        user.ID.Hex(),
-		Email:     user.Email,
-		Name:      user.Name,
-		Weight:    user.Weight,
-		Height:    user.Height,
-		Age:       user.Age,
-		Picture:   user.Picture,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(user)
 }
 
-func UpdateProfileHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userID := vars["id"]
-
-	objectID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
+func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	userID := h.extractIDFromPath(r.URL.Path)
+	if userID == "" {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
@@ -116,94 +74,53 @@ func UpdateProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updateFields := bson.M{
-		"updated_at": time.Now(),
-	}
-
-	if req.Name != nil {
-		updateFields["name"] = *req.Name
-	}
-	if req.Email != nil {
-		updateFields["email"] = *req.Email
-	}
-	if req.Weight != nil {
-		updateFields["weight"] = *req.Weight
-	}
-	if req.Height != nil {
-		updateFields["height"] = *req.Height
-	}
-	if req.Age != nil {
-		updateFields["age"] = *req.Age
-	}
-	if req.Picture != nil {
-		updateFields["picture"] = *req.Picture
-	}
-
-	collection := database.MongoDB.Collection("users")
-	_, err = collection.UpdateOne(
-		context.Background(),
-		bson.M{"_id": objectID},
-		bson.M{"$set": updateFields},
-	)
+	user, err := h.controller.UpdateProfile(userID, &req)
 	if err != nil {
-		http.Error(w, "Failed to update user", http.StatusInternalServerError)
+		statusCode := http.StatusInternalServerError
+		if err.Error() == "invalid user ID" || err.Error() == "no fields to update" {
+			statusCode = http.StatusBadRequest
+		} else if err.Error() == "user not found" {
+			statusCode = http.StatusNotFound
+		} else if err.Error() == "email already in use" {
+			statusCode = http.StatusConflict
+		}
+		http.Error(w, err.Error(), statusCode)
 		return
-	}
-
-	// Get updated user
-	var user User
-	err = collection.FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&user)
-	if err != nil {
-		http.Error(w, "Failed to get updated user", http.StatusInternalServerError)
-		return
-	}
-
-	response := UserResponse{
-		ID:        user.ID.Hex(),
-		Email:     user.Email,
-		Name:      user.Name,
-		Weight:    user.Weight,
-		Height:    user.Height,
-		Age:       user.Age,
-		Picture:   user.Picture,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(user)
 }
 
-func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userID := vars["id"]
-
-	objectID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
+func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	userID := h.extractIDFromPath(r.URL.Path)
+	if userID == "" {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
 
-	collection := database.MongoDB.Collection("users")
-	result, err := collection.DeleteOne(context.Background(), bson.M{"_id": objectID})
+	err := h.controller.DeleteUser(userID)
 	if err != nil {
-		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
-		return
-	}
-
-	if result.DeletedCount == 0 {
-		http.Error(w, "User not found", http.StatusNotFound)
+		statusCode := http.StatusInternalServerError
+		if err.Error() == "invalid user ID" {
+			statusCode = http.StatusBadRequest
+		} else if err.Error() == "user not found" {
+			statusCode = http.StatusNotFound
+		}
+		http.Error(w, err.Error(), statusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func RegisterRoutes(router *mux.Router) {
-	userRouter := router.PathPrefix("/users").Subrouter()
-	
-	userRouter.HandleFunc("", CreateUserHandler).Methods("POST")
-	userRouter.HandleFunc("/{id}", GetUserHandler).Methods("GET")
-	userRouter.HandleFunc("/{id}", UpdateProfileHandler).Methods("PUT")
-	userRouter.HandleFunc("/{id}", DeleteUserHandler).Methods("DELETE")
+func (h *Handler) extractIDFromPath(path string) string {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	for i, part := range parts {
+		if part == "users" && i+1 < len(parts) {
+			return parts[i+1]
+		}
+	}
+	return ""
 }
+

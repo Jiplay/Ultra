@@ -10,21 +10,25 @@ help: ## Show this help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 # Development commands
-dev: ## Start development environment
-	docker-compose -f docker-compose.yml up --build
-
-dev-bg: ## Start development environment in background
-	docker-compose -f docker-compose.yml up -d --build
-
-dev-full: ## Start development environment with additional dev services
+dev: ## Start development environment with hot reload
 	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
+dev-bg: ## Start development environment in background
+	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+
+dev-basic: ## Start basic development environment (no dev tools)
+	docker-compose -f docker-compose.yml up --build
+
 # Production commands
-prod: ## Start production environment
-	docker-compose -f docker-compose.prod.yml up -d --build
+prod: ## Start production environment (uses pre-built image)
+	docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+prod-pull: ## Pull latest production image and start
+	docker pull ghcr.io/jiplay/ultra:latest
+	docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 prod-logs: ## View production logs
-	docker-compose -f docker-compose.prod.yml logs -f
+	docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
 
 # Build commands
 build: ## Build the application image

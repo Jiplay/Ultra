@@ -1,0 +1,26 @@
+# Environment files
+.env
+.env.local
+.env.production
+
+# Backups
+backups/
+
+# Logs
+*.log
+logs/
+
+# SSL certificates (if stored here)
+*.pem
+*.key
+*.crt
+*.csr
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*~

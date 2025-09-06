@@ -1,12 +1,15 @@
+version: '3.8'
+
+# Production configuration - uses pre-built images
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+
 services:
   ultra-api:
     image: ghcr.io/jiplay/ultra:latest
-    container_name: ultra_api
+    container_name: ultra_api_prod
     restart: unless-stopped
-    ports:
-      - "8080:8080"
     environment:
-      - MONGODB_URI=mongodb://ultra_user:$${MONGO_PASSWORD}@mongodb:27017/ultra?authSource=admin
+      - MONGODB_URI=mongodb://ultra_user:$${MONGO_PASSWORD}@mongo:27017/ultra?authSource=admin
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_USER=ultra_user
@@ -15,10 +18,12 @@ services:
       - POSTGRES_SSL=disable
       - PORT=8080
       - JWT_SECRET=$${JWT_SECRET}
+      - GO_ENV=production
+      - LOG_LEVEL=info
     depends_on:
       postgres:
         condition: service_healthy
-      mongodb:
+      mongo:
         condition: service_healthy
     networks:
       - ultra-network
@@ -27,49 +32,58 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
 
   postgres:
-    image: postgres:15
-    container_name: ultra_postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_USER: ultra_user
       POSTGRES_PASSWORD: $${POSTGRES_PASSWORD}
-      POSTGRES_DB: ultra_db
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./postgres-init:/docker-entrypoint-initdb.d
-    networks:
-      - ultra-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ultra_user -d ultra_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "3"
 
-  mongodb:
-    image: mongo:7
-    container_name: ultra_mongodb
-    restart: unless-stopped
+  mongo:
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ultra_user
       MONGO_INITDB_ROOT_PASSWORD: $${MONGO_PASSWORD}
-      MONGO_INITDB_DATABASE: ultra
-    volumes:
-      - mongodb_data:/data/db
-      - ./mongo-init:/docker-entrypoint-initdb.d
-    networks:
-      - ultra-network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   nginx:
     image: nginx:alpine
-    container_name: ultra_nginx
+    container_name: ultra_nginx_prod
     restart: unless-stopped
     ports:
       - "80:80"
@@ -82,15 +96,8 @@ services:
       - ultra-api
     networks:
       - ultra-network
-
-networks:
-  ultra-network:
-    driver: bridge
-
-volumes:
-  postgres_data:
-    driver: local
-  mongodb_data:
-    driver: local
-  nginx_logs:
-    driver: local
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "3"
