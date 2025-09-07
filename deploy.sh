@@ -102,7 +102,7 @@ deploy_api() {
         print_success "Successfully pulled latest API image"
     else
         print_warning "Failed to pull from registry, building locally..."
-        docker build -t ultra-api:latest .
+        docker build -t ultra:latest .
     fi
     
     # Run API container
@@ -113,7 +113,6 @@ deploy_api() {
         --env-file .env.docker \
         -p 8080:8080 \
         --restart unless-stopped \
-        --depends-on $POSTGRES_CONTAINER \
         $GITHUB_REGISTRY/$GITHUB_USER/$REPO_NAME:latest || \
     docker run -d \
         --name $API_CONTAINER \
@@ -121,7 +120,7 @@ deploy_api() {
         --env-file .env.docker \
         -p 8080:8080 \
         --restart unless-stopped \
-        ultra-api:latest
+        ultra:latest
     
     print_success "API container started: $API_CONTAINER"
 }
