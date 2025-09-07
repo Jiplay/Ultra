@@ -5,13 +5,10 @@
 # Documentation
 README.md
 *.md
-docs/
 
-# Development files
-.env
-.env.local
-.env.development
-.env.test
+# Docker
+Dockerfile
+.dockerignore
 
 # IDE
 .vscode/
@@ -23,35 +20,21 @@ docs/
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
 
-# Docker
-Dockerfile*
-docker-compose*.yml
-.dockerignore
+# Dependencies
+vendor/
 
 # GitHub
 .github/
 
-# Build artifacts
-main
-*.exe
-
-# Test files
-*_test.go
-
 # Temporary files
-tmp/
-temp/
-
-# Database initialization (included separately)
-mongo-init/
-postgres-init/
-
-# Development scripts
-scripts/
-
-# Ultra specific
-ultra.drawio
-requests/
+*.tmp
+*.log
