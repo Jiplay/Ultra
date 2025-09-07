@@ -18,16 +18,11 @@ func (c *Controller) CreateFood(req *CreateFoodRequest) (*Food, error) {
 	}
 
 	food := &Food{
-		Name:        req.Name,
-		Description: req.Description,
-		Category:    req.Category,
-		Calories:    req.Calories,
-		Protein:     req.Protein,
-		Carbs:       req.Carbs,
-		Fat:         req.Fat,
-		Fiber:       req.Fiber,
-		Sugar:       req.Sugar,
-		Sodium:      req.Sodium,
+		Name:     req.Name,
+		Calories: req.Calories,
+		Protein:  req.Protein,
+		Carbs:    req.Carbs,
+		Fat:      req.Fat,
 	}
 
 	return c.repo.Create(food)
@@ -67,9 +62,6 @@ func (c *Controller) validateCreateRequest(req *CreateFoodRequest) error {
 	if req.Name == "" {
 		return errors.New("food name is required")
 	}
-	if req.Category == "" {
-		return errors.New("food category is required")
-	}
 	if req.Calories < 0 {
 		return errors.New("calories cannot be negative")
 	}
@@ -81,15 +73,6 @@ func (c *Controller) validateCreateRequest(req *CreateFoodRequest) error {
 	}
 	if req.Fat < 0 {
 		return errors.New("fat cannot be negative")
-	}
-	if req.Fiber < 0 {
-		return errors.New("fiber cannot be negative")
-	}
-	if req.Sugar < 0 {
-		return errors.New("sugar cannot be negative")
-	}
-	if req.Sodium < 0 {
-		return errors.New("sodium cannot be negative")
 	}
 	return nil
 }
@@ -112,15 +95,6 @@ func (c *Controller) validateUpdateRequest(req *UpdateFoodRequest) error {
 	}
 	if req.Fat != nil && *req.Fat < 0 {
 		return errors.New("fat cannot be negative")
-	}
-	if req.Fiber != nil && *req.Fiber < 0 {
-		return errors.New("fiber cannot be negative")
-	}
-	if req.Sugar != nil && *req.Sugar < 0 {
-		return errors.New("sugar cannot be negative")
-	}
-	if req.Sodium != nil && *req.Sodium < 0 {
-		return errors.New("sodium cannot be negative")
 	}
 	return nil
 }

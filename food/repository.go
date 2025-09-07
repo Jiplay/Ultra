@@ -15,9 +15,9 @@ type Repository interface {
 }
 
 type InMemoryRepository struct {
-	foods   map[int]*Food
-	nextID  int
-	mu      sync.RWMutex
+	foods  map[int]*Food
+	nextID int
+	mu     sync.RWMutex
 }
 
 func NewInMemoryRepository() *InMemoryRepository {
@@ -76,12 +76,6 @@ func (r *InMemoryRepository) Update(id int, updates *UpdateFoodRequest) (*Food, 
 	if updates.Name != nil {
 		food.Name = *updates.Name
 	}
-	if updates.Description != nil {
-		food.Description = *updates.Description
-	}
-	if updates.Category != nil {
-		food.Category = *updates.Category
-	}
 	if updates.Calories != nil {
 		food.Calories = *updates.Calories
 	}
@@ -94,16 +88,6 @@ func (r *InMemoryRepository) Update(id int, updates *UpdateFoodRequest) (*Food, 
 	if updates.Fat != nil {
 		food.Fat = *updates.Fat
 	}
-	if updates.Fiber != nil {
-		food.Fiber = *updates.Fiber
-	}
-	if updates.Sugar != nil {
-		food.Sugar = *updates.Sugar
-	}
-	if updates.Sodium != nil {
-		food.Sodium = *updates.Sodium
-	}
-
 	food.UpdatedAt = time.Now()
 	return food, nil
 }
