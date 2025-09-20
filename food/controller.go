@@ -19,6 +19,7 @@ func (c *Controller) CreateFood(req *CreateFoodRequest) (*Food, error) {
 
 	food := &Food{
 		Name:     req.Name,
+		Unit:     req.Unit,
 		Calories: req.Calories,
 		Protein:  req.Protein,
 		Carbs:    req.Carbs,
@@ -62,6 +63,12 @@ func (c *Controller) validateCreateRequest(req *CreateFoodRequest) error {
 	if req.Name == "" {
 		return errors.New("food name is required")
 	}
+	if req.Unit == "" {
+		return errors.New("unit is required")
+	}
+	if req.Unit != "100g" && req.Unit != "100ml" && req.Unit != "piece" {
+		return errors.New("unit must be one of: 100g, 100ml, piece")
+	}
 	if req.Calories < 0 {
 		return errors.New("calories cannot be negative")
 	}
@@ -80,6 +87,12 @@ func (c *Controller) validateCreateRequest(req *CreateFoodRequest) error {
 func (c *Controller) validateUpdateRequest(req *UpdateFoodRequest) error {
 	if req.Name != nil && *req.Name == "" {
 		return errors.New("food name cannot be empty")
+	}
+	if req.Unit != nil && *req.Unit == "" {
+		return errors.New("unit cannot be empty")
+	}
+	if req.Unit != nil && *req.Unit != "100g" && *req.Unit != "100ml" && *req.Unit != "piece" {
+		return errors.New("unit must be one of: 100g, 100ml, piece")
 	}
 	if req.Category != nil && *req.Category == "" {
 		return errors.New("food category cannot be empty")

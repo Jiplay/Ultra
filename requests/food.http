@@ -1,0 +1,6 @@
+@URL=http://localhost:8081
+
+### GET request to example server
+GET {{URL}}/api/foods
+
+###

@@ -74,6 +74,9 @@ func (r *InMemoryRepository) Update(id int, updates *UpdateFoodRequest) (*Food, 
 	if updates.Fat != nil {
 		food.Fat = *updates.Fat
 	}
+	if updates.Unit != nil {
+		food.Unit = *updates.Unit
+	}
 
 	food.UpdatedAt = time.Now()
 	return food, nil
@@ -98,11 +101,11 @@ func NewPostgreSQLRepository(db *sql.DB) *PostgreSQLRepository {
 
 func (r *PostgreSQLRepository) Create(food *Food) (*Food, error) {
 	query := `
-		INSERT INTO foods (name, calories, protein, carbs, fat, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+		INSERT INTO foods (name, unit, calories, protein, carbs, fat, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 		RETURNING id, created_at, updated_at`
 
-	err := r.db.QueryRow(query, food.Name, food.Calories, food.Protein, food.Carbs, food.Fat).
+	err := r.db.QueryRow(query, food.Name, food.Unit, food.Calories, food.Protein, food.Carbs, food.Fat).
 		Scan(&food.ID, &food.CreatedAt, &food.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create food: %w", err)
@@ -112,12 +115,12 @@ func (r *PostgreSQLRepository) Create(food *Food) (*Food, error) {
 }
 
 func (r *PostgreSQLRepository) GetByID(id int) (*Food, error) {
-	query := `SELECT id, name, calories, protein, carbs, fat, created_at, updated_at 
+	query := `SELECT id, name, unit, calories, protein, carbs, fat, created_at, updated_at
 			  FROM foods WHERE id = $1`
 
 	food := &Food{}
 	err := r.db.QueryRow(query, id).Scan(
-		&food.ID, &food.Name, &food.Calories, &food.Protein,
+		&food.ID, &food.Name, &food.Unit, &food.Calories, &food.Protein,
 		&food.Carbs, &food.Fat, &food.CreatedAt, &food.UpdatedAt,
 	)
 	if err != nil {
@@ -131,7 +134,7 @@ func (r *PostgreSQLRepository) GetByID(id int) (*Food, error) {
 }
 
 func (r *PostgreSQLRepository) GetAll() ([]*Food, error) {
-	query := `SELECT id, name, calories, protein, carbs, fat, created_at, updated_at 
+	query := `SELECT id, name, unit, calories, protein, carbs, fat, created_at, updated_at
 			  FROM foods ORDER BY created_at DESC`
 
 	rows, err := r.db.Query(query)
@@ -144,7 +147,7 @@ func (r *PostgreSQLRepository) GetAll() ([]*Food, error) {
 	for rows.Next() {
 		food := &Food{}
 		err := rows.Scan(
-			&food.ID, &food.Name, &food.Calories, &food.Protein,
+			&food.ID, &food.Name, &food.Unit, &food.Calories, &food.Protein,
 			&food.Carbs, &food.Fat, &food.CreatedAt, &food.UpdatedAt,
 		)
 		if err != nil {
@@ -183,15 +186,18 @@ func (r *PostgreSQLRepository) Update(id int, updates *UpdateFoodRequest) (*Food
 	if updates.Fat != nil {
 		currentFood.Fat = *updates.Fat
 	}
+	if updates.Unit != nil {
+		currentFood.Unit = *updates.Unit
+	}
 
 	// Update in database
 	query := `
-		UPDATE foods 
-		SET name = $1, calories = $2, protein = $3, carbs = $4, fat = $5, updated_at = NOW()
-		WHERE id = $6
+		UPDATE foods
+		SET name = $1, unit = $2, calories = $3, protein = $4, carbs = $5, fat = $6, updated_at = NOW()
+		WHERE id = $7
 		RETURNING updated_at`
 
-	err = r.db.QueryRow(query, currentFood.Name, currentFood.Calories,
+	err = r.db.QueryRow(query, currentFood.Name, currentFood.Unit, currentFood.Calories,
 		currentFood.Protein, currentFood.Carbs, currentFood.Fat, id).
 		Scan(&currentFood.UpdatedAt)
 	if err != nil {
