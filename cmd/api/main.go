@@ -5,8 +5,13 @@ import (
 	"net/http"
 	"os"
 
+	"ultra-bis/internal/auth"
 	"ultra-bis/internal/database"
+	"ultra-bis/internal/diary"
 	"ultra-bis/internal/food"
+	"ultra-bis/internal/goal"
+	"ultra-bis/internal/metrics"
+	"ultra-bis/internal/user"
 )
 
 func main() {
@@ -17,20 +22,41 @@ func main() {
 	}
 
 	// Auto-migrate database schema (like Sequelize sync)
-	if err := db.AutoMigrate(&food.Food{}); err != nil {
+	log.Println("Running database migrations...")
+	if err := db.AutoMigrate(
+		&user.User{},
+		&food.Food{},
+		&goal.NutritionGoal{},
+		&diary.DiaryEntry{},
+		&metrics.BodyMetric{},
+	); err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
 	log.Println("Database migration completed")
 
-	// Initialize food repository and handler
+	// Initialize repositories
+	userRepo := user.NewRepository(db)
 	foodRepo := food.NewRepository(db)
+	goalRepo := goal.NewRepository(db)
+	diaryRepo := diary.NewRepository(db)
+	metricsRepo := metrics.NewRepository(db)
+
+	// Initialize handlers
+	authHandler := auth.NewHandler(userRepo)
 	foodHandler := food.NewHandler(foodRepo)
+	goalHandler := goal.NewHandler(goalRepo, userRepo)
+	diaryHandler := diary.NewHandler(diaryRepo, foodRepo, goalRepo)
+	metricsHandler := metrics.NewHandler(metricsRepo, userRepo)
 
 	// Setup routes
 	mux := http.NewServeMux()
 
-	// Register food routes
+	// Register all routes
+	auth.RegisterRoutes(mux, authHandler)
 	food.RegisterRoutes(mux, foodHandler)
+	goal.RegisterRoutes(mux, goalHandler)
+	diary.RegisterRoutes(mux, diaryHandler)
+	metrics.RegisterRoutes(mux, metricsHandler)
 
 	// Health check endpoint
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -41,13 +67,47 @@ func main() {
 	// Start server
 	port := getEnv("PORT", "8080")
 	log.Printf("Server starting on port %s", port)
-	log.Printf("Available endpoints:")
-	log.Printf("  GET    /health        - Health check")
-	log.Printf("  POST   /foods         - Create food")
-	log.Printf("  GET    /foods         - List all foods")
-	log.Printf("  GET    /foods/{id}    - Get food by ID")
-	log.Printf("  PUT    /foods/{id}    - Update food")
-	log.Printf("  DELETE /foods/{id}    - Delete food")
+	log.Println("===========================================")
+	log.Println("Available endpoints:")
+	log.Println("-------------------------------------------")
+	log.Println("AUTH:")
+	log.Println("  POST   /auth/register          - Register new user")
+	log.Println("  POST   /auth/login             - Login")
+	log.Println("  GET    /auth/me                - Get current user (protected)")
+	log.Println("  PUT    /users/profile          - Update profile (protected)")
+	log.Println("-------------------------------------------")
+	log.Println("FOODS:")
+	log.Println("  POST   /foods                  - Create food")
+	log.Println("  GET    /foods                  - List all foods")
+	log.Println("  GET    /foods/{id}             - Get food by ID")
+	log.Println("  PUT    /foods/{id}             - Update food")
+	log.Println("  DELETE /foods/{id}             - Delete food")
+	log.Println("-------------------------------------------")
+	log.Println("NUTRITION GOALS:")
+	log.Println("  POST   /goals                  - Create goal (protected)")
+	log.Println("  GET    /goals                  - Get active goal (protected)")
+	log.Println("  GET    /goals/all              - Get all goals (protected)")
+	log.Println("  POST   /goals/recommended      - Calculate recommended goals (protected)")
+	log.Println("  PUT    /goals/{id}             - Update goal (protected)")
+	log.Println("  DELETE /goals/{id}             - Delete goal (protected)")
+	log.Println("-------------------------------------------")
+	log.Println("DIARY (MEAL LOGGING):")
+	log.Println("  POST   /diary/entries          - Log food/meal (protected)")
+	log.Println("  GET    /diary/entries?date=... - Get entries by date (protected)")
+	log.Println("  GET    /diary/summary/{date}   - Get daily summary (protected)")
+	log.Println("  PUT    /diary/entries/{id}     - Update entry (protected)")
+	log.Println("  DELETE /diary/entries/{id}     - Delete entry (protected)")
+	log.Println("-------------------------------------------")
+	log.Println("BODY METRICS:")
+	log.Println("  POST   /metrics                - Log body metrics (protected)")
+	log.Println("  GET    /metrics                - Get all metrics (protected)")
+	log.Println("  GET    /metrics/latest         - Get latest metrics (protected)")
+	log.Println("  GET    /metrics/trends?period=7d|30d|90d - Get trends (protected)")
+	log.Println("  DELETE /metrics/{id}           - Delete metric (protected)")
+	log.Println("-------------------------------------------")
+	log.Println("HEALTH:")
+	log.Println("  GET    /health                 - Health check")
+	log.Println("===========================================")
 
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal("Server failed to start:", err)
