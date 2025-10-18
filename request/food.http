@@ -1,0 +1,177 @@
+### Health Check
+GET http://localhost:8080/health
+
+###
+
+### Create Food - Chicken Breast
+POST http://localhost:8080/foods
+Content-Type: application/json
+
+{
+  "name": "Chicken Breast",
+  "description": "Grilled skinless chicken breast",
+  "calories": 165,
+  "protein": 31,
+  "carbs": 0,
+  "fat": 3.6,
+  "fiber": 0
+}
+
+###
+
+### Create Food - Brown Rice
+POST http://localhost:8080/foods
+Content-Type: application/json
+
+{
+  "name": "Brown Rice",
+  "description": "Cooked brown rice, 1 cup",
+  "calories": 216,
+  "protein": 5,
+  "carbs": 45,
+  "fat": 1.8,
+  "fiber": 3.5
+}
+
+###
+
+### Create Food - Avocado
+POST http://localhost:8080/foods
+Content-Type: application/json
+
+{
+  "name": "Avocado",
+  "description": "Fresh avocado, 1 medium",
+  "calories": 160,
+  "protein": 2,
+  "carbs": 8.5,
+  "fat": 14.7,
+  "fiber": 6.7
+}
+
+###
+
+### Create Food - Salmon
+POST http://localhost:8080/foods
+Content-Type: application/json
+
+{
+  "name": "Salmon",
+  "description": "Atlantic salmon, baked",
+  "calories": 206,
+  "protein": 22,
+  "carbs": 0,
+  "fat": 13,
+  "fiber": 0
+}
+
+###
+
+### Create Food - Broccoli
+POST http://localhost:8080/foods
+Content-Type: application/json
+
+{
+  "name": "Broccoli",
+  "description": "Steamed broccoli, 1 cup",
+  "calories": 55,
+  "protein": 3.7,
+  "carbs": 11,
+  "fat": 0.6,
+  "fiber": 5.1
+}
+
+###
+
+### Get All Foods
+GET http://localhost:8080/foods
+
+###
+
+### Get Food by ID (ID: 1)
+GET http://localhost:8080/foods/1
+
+###
+
+### Get Food by ID (ID: 2)
+GET http://localhost:8080/foods/2
+
+###
+
+### Get Food by ID (ID: 3)
+GET http://localhost:8080/foods/3
+
+###
+
+### Update Food (ID: 1)
+PUT http://localhost:8080/foods/1
+Content-Type: application/json
+
+{
+  "name": "Chicken Breast - Organic",
+  "description": "Organic grilled skinless chicken breast, updated",
+  "calories": 170,
+  "protein": 32,
+  "carbs": 0,
+  "fat": 4,
+  "fiber": 0
+}
+
+###
+
+### Update Food (ID: 2)
+PUT http://localhost:8080/foods/2
+Content-Type: application/json
+
+{
+  "name": "Brown Rice - Long Grain",
+  "description": "Cooked long grain brown rice, 1 cup",
+  "calories": 218,
+  "protein": 5.5,
+  "carbs": 45.8,
+  "fat": 1.8,
+  "fiber": 3.5
+}
+
+###
+
+### Delete Food (ID: 1)
+DELETE http://localhost:8080/foods/1
+
+###
+
+### Delete Food (ID: 5)
+DELETE http://localhost:8080/foods/5
+
+###
+
+### Get Non-existent Food (should return 404)
+GET http://localhost:8080/foods/999
+
+###
+
+### Create Food - Missing Required Field (should return 400)
+POST http://localhost:8080/foods
+Content-Type: application/json
+
+{
+  "description": "No name provided",
+  "calories": 100,
+  "protein": 10,
+  "carbs": 10,
+  "fat": 5,
+  "fiber": 2
+}
+
+###
+
+### Create Food - Invalid JSON (should return 400)
+POST http://localhost:8080/foods
+Content-Type: application/json
+
+{
+  "name": "Invalid Food"
+  "calories": 100
+}
+
+###
