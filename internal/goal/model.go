@@ -8,16 +8,19 @@ import (
 
 // NutritionGoal represents daily nutrition targets for a user
 type NutritionGoal struct {
-	gorm.Model
-	UserID    uint      `json:"user_id" gorm:"not null;index"`
-	Calories  float64   `json:"calories" gorm:"type:decimal(10,2)"`
-	Protein   float64   `json:"protein" gorm:"type:decimal(10,2)"`
-	Carbs     float64   `json:"carbs" gorm:"type:decimal(10,2)"`
-	Fat       float64   `json:"fat" gorm:"type:decimal(10,2)"`
-	Fiber     float64   `json:"fiber" gorm:"type:decimal(10,2)"`
-	StartDate time.Time `json:"start_date" gorm:"not null"`
-	EndDate   *time.Time `json:"end_date"`
-	IsActive  bool      `json:"is_active" gorm:"default:true;index"`
+	ID        uint           `json:"id" gorm:"primarykey"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	UserID    uint           `json:"user_id" gorm:"not null;index"`
+	Calories  float64        `json:"calories" gorm:"type:decimal(10,2)"`
+	Protein   float64        `json:"protein" gorm:"type:decimal(10,2)"`
+	Carbs     float64        `json:"carbs" gorm:"type:decimal(10,2)"`
+	Fat       float64        `json:"fat" gorm:"type:decimal(10,2)"`
+	Fiber     float64        `json:"fiber" gorm:"type:decimal(10,2)"`
+	StartDate time.Time      `json:"start_date" gorm:"not null"`
+	EndDate   *time.Time     `json:"end_date"`
+	IsActive  bool           `json:"is_active" gorm:"default:true;index"`
 }
 
 // CreateGoalRequest represents the request to create a nutrition goal

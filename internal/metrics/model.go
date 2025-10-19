@@ -8,14 +8,17 @@ import (
 
 // BodyMetric represents a body measurement entry
 type BodyMetric struct {
-	gorm.Model
-	UserID            uint      `json:"user_id" gorm:"not null;index:idx_user_date"`
-	Date              time.Time `json:"date" gorm:"not null;index:idx_user_date"`
-	Weight            float64   `json:"weight" gorm:"type:decimal(5,2)"`              // in kg
-	BodyFatPercent    float64   `json:"body_fat_percent" gorm:"type:decimal(5,2)"`    // percentage
-	MuscleMassPercent float64   `json:"muscle_mass_percent" gorm:"type:decimal(5,2)"` // percentage
-	BMI               float64   `json:"bmi" gorm:"type:decimal(5,2)"`
-	Notes             string    `json:"notes" gorm:"type:text"`
+	ID                uint           `json:"id" gorm:"primarykey"`
+	CreatedAt         time.Time      `json:"created_at"`
+	UpdatedAt         time.Time      `json:"updated_at"`
+	DeletedAt         gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	UserID            uint           `json:"user_id" gorm:"not null;index:idx_user_date"`
+	Date              time.Time      `json:"date" gorm:"not null;index:idx_user_date"`
+	Weight            float64        `json:"weight" gorm:"type:decimal(5,2)"`              // in kg
+	BodyFatPercent    float64        `json:"body_fat_percent" gorm:"type:decimal(5,2)"`    // percentage
+	MuscleMassPercent float64        `json:"muscle_mass_percent" gorm:"type:decimal(5,2)"` // percentage
+	BMI               float64        `json:"bmi" gorm:"type:decimal(5,2)"`
+	Notes             string         `json:"notes" gorm:"type:text"`
 }
 
 // CreateMetricRequest represents the request to create a body metric

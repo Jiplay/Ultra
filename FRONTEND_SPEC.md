@@ -77,7 +77,7 @@ http://localhost:8080
 ### API Base URL
 ```javascript
 const API_BASE_URL = 'http://localhost:8080';
-// Production: 'https://api.yourdomain.com'
+
 ```
 
 ### Environment Variables

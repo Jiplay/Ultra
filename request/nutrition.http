@@ -166,7 +166,7 @@ Content-Type: application/json
 
 {
   "calories": 2300,
-  "protein": 170,
+  "protein": 130,
   "carbs": 230,
   "fat": 77,
   "fiber": 32

@@ -18,21 +18,24 @@ const (
 
 // DiaryEntry represents a food logging entry
 type DiaryEntry struct {
-	gorm.Model
-	UserID       uint      `json:"user_id" gorm:"not null;index:idx_user_date"`
-	FoodID       *uint     `json:"food_id" gorm:"index"`
-	RecipeID     *uint     `json:"recipe_id" gorm:"index"`
-	Date         time.Time `json:"date" gorm:"not null;index:idx_user_date"`
-	MealType     MealType  `json:"meal_type" gorm:"type:varchar(20);not null"`
-	ServingSize  float64   `json:"serving_size" gorm:"type:decimal(10,2);default:1"`
-	Notes        string    `json:"notes" gorm:"type:text"`
+	ID           uint           `json:"id" gorm:"primarykey"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	UserID       uint           `json:"user_id" gorm:"not null;index:idx_user_date"`
+	FoodID       *uint          `json:"food_id" gorm:"index"`
+	RecipeID     *uint          `json:"recipe_id" gorm:"index"`
+	Date         time.Time      `json:"date" gorm:"not null;index:idx_user_date"`
+	MealType     MealType       `json:"meal_type" gorm:"type:varchar(20);not null"`
+	ServingSize  float64        `json:"serving_size" gorm:"type:decimal(10,2);default:1"`
+	Notes        string         `json:"notes" gorm:"type:text"`
 
 	// Cached nutritional values (calculated at insert time)
-	Calories     float64   `json:"calories" gorm:"type:decimal(10,2)"`
-	Protein      float64   `json:"protein" gorm:"type:decimal(10,2)"`
-	Carbs        float64   `json:"carbs" gorm:"type:decimal(10,2)"`
-	Fat          float64   `json:"fat" gorm:"type:decimal(10,2)"`
-	Fiber        float64   `json:"fiber" gorm:"type:decimal(10,2)"`
+	Calories     float64        `json:"calories" gorm:"type:decimal(10,2)"`
+	Protein      float64        `json:"protein" gorm:"type:decimal(10,2)"`
+	Carbs        float64        `json:"carbs" gorm:"type:decimal(10,2)"`
+	Fat          float64        `json:"fat" gorm:"type:decimal(10,2)"`
+	Fiber        float64        `json:"fiber" gorm:"type:decimal(10,2)"`
 }
 
 // CreateDiaryEntryRequest represents the request to create a diary entry

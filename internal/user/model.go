@@ -1,6 +1,8 @@
 package user
 
 import (
+	"time"
+
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -27,7 +29,10 @@ const (
 
 // User represents a user in the system
 type User struct {
-	gorm.Model
+	ID            uint          `json:"id" gorm:"primarykey"`
+	CreatedAt     time.Time     `json:"created_at"`
+	UpdatedAt     time.Time     `json:"updated_at"`
+	DeletedAt     gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 	Email         string        `json:"email" gorm:"uniqueIndex;not null"`
 	PasswordHash  string        `json:"-" gorm:"not null"`
 	Name          string        `json:"name" gorm:"type:varchar(255)"`
