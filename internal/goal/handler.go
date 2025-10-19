@@ -60,8 +60,14 @@ func (h *Handler) CreateGoal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set start date to today if not provided
-	if req.StartDate.IsZero() {
-		req.StartDate = time.Now()
+	startDate := req.StartDate.Time
+	if startDate.IsZero() {
+		startDate = time.Now()
+	}
+
+	var endDate *time.Time
+	if req.EndDate != nil && !req.EndDate.IsZero() {
+		endDate = &req.EndDate.Time
 	}
 
 	goal := &NutritionGoal{
@@ -71,8 +77,8 @@ func (h *Handler) CreateGoal(w http.ResponseWriter, r *http.Request) {
 		Carbs:     req.Carbs,
 		Fat:       req.Fat,
 		Fiber:     req.Fiber,
-		StartDate: req.StartDate,
-		EndDate:   req.EndDate,
+		StartDate: startDate,
+		EndDate:   endDate,
 		IsActive:  true,
 	}
 

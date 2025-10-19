@@ -1,10 +1,43 @@
 package goal
 
 import (
+	"encoding/json"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
 )
+
+// Date is a custom type that handles both "YYYY-MM-DD" and RFC3339 formats
+type Date struct {
+	time.Time
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for Date
+func (d *Date) UnmarshalJSON(b []byte) error {
+	s := strings.Trim(string(b), "\"")
+
+	// Try parsing as date only (YYYY-MM-DD)
+	t, err := time.Parse("2006-01-02", s)
+	if err == nil {
+		d.Time = t
+		return nil
+	}
+
+	// Try parsing as RFC3339 (full timestamp)
+	t, err = time.Parse(time.RFC3339, s)
+	if err == nil {
+		d.Time = t
+		return nil
+	}
+
+	return err
+}
+
+// MarshalJSON implements custom JSON marshaling for Date
+func (d Date) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.Time)
+}
 
 // NutritionGoal represents daily nutrition targets for a user
 type NutritionGoal struct {
@@ -25,13 +58,13 @@ type NutritionGoal struct {
 
 // CreateGoalRequest represents the request to create a nutrition goal
 type CreateGoalRequest struct {
-	Calories  float64    `json:"calories"`
-	Protein   float64    `json:"protein"`
-	Carbs     float64    `json:"carbs"`
-	Fat       float64    `json:"fat"`
-	Fiber     float64    `json:"fiber"`
-	StartDate time.Time  `json:"start_date"`
-	EndDate   *time.Time `json:"end_date"`
+	Calories  float64 `json:"calories"`
+	Protein   float64 `json:"protein"`
+	Carbs     float64 `json:"carbs"`
+	Fat       float64 `json:"fat"`
+	Fiber     float64 `json:"fiber"`
+	StartDate Date    `json:"start_date"`
+	EndDate   *Date   `json:"end_date,omitempty"`
 }
 
 // UpdateGoalRequest represents the request to update a nutrition goal
