@@ -173,3 +173,35 @@ func extractID(path, prefix string) (int, error) {
 	idStr := strings.TrimPrefix(path, prefix)
 	return strconv.Atoi(idStr)
 }
+
+// handleFoods routes /foods requests by HTTP method
+func (h *Handler) handleFoods(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		h.GetAllFoods(w, r)
+	case http.MethodPost:
+		h.CreateFood(w, r)
+	default:
+		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}
+
+// handleFoodsWithID routes /foods/{id} requests by HTTP method
+func (h *Handler) handleFoodsWithID(w http.ResponseWriter, r *http.Request) {
+	// Check if this is actually a request to /foods (no ID)
+	if strings.TrimPrefix(r.URL.Path, "/foods/") == "" {
+		h.GetAllFoods(w, r)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		h.GetFood(w, r)
+	case http.MethodPut:
+		h.UpdateFood(w, r)
+	case http.MethodDelete:
+		h.DeleteFood(w, r)
+	default:
+		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}

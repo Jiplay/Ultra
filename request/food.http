@@ -3,8 +3,12 @@ GET http://localhost:8080/health
 
 ###
 
+
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJlbWFpbCI6Imp1anVnYXJzaWFAZ21haWwuY29tIiwiZXhwIjoxNzYyMTU5NDM0LCJpYXQiOjE3NjIwNzMwMzR9.gWtzkHEpPD4eb-C-shb9YTmOWuiWuR8SvjhOOjA4vR8
+
 ### Create Food - Chicken Breast
 POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -21,6 +25,7 @@ Content-Type: application/json
 
 ### Create Food - Brown Rice
 POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -37,6 +42,7 @@ Content-Type: application/json
 
 ### Create Food - Avocado
 POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -53,6 +59,7 @@ Content-Type: application/json
 
 ### Create Food - Salmon
 POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -69,6 +76,7 @@ Content-Type: application/json
 
 ### Create Food - Broccoli
 POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -85,6 +93,7 @@ Content-Type: application/json
 
 ### Get All Foods
 GET http://localhost:8080/foods
+Authorization: Bearer {{token}}
 
 ###
 
@@ -136,8 +145,8 @@ Content-Type: application/json
 ###
 
 ### Delete Food (ID: 1)
-DELETE http://localhost:8080/foods/1
-
+DELETE http://localhost:8080/foods/9
+Authorization: Bearer {{token}}
 ###
 
 ### Delete Food (ID: 5)
