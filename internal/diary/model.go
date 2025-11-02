@@ -36,6 +36,10 @@ type DiaryEntry struct {
 	Carbs        float64        `json:"carbs" gorm:"type:decimal(10,2)"`
 	Fat          float64        `json:"fat" gorm:"type:decimal(10,2)"`
 	Fiber        float64        `json:"fiber" gorm:"type:decimal(10,2)"`
+
+	// Additional fields for display (not persisted)
+	FoodName     string         `json:"food_name,omitempty" gorm:"-"`
+	RecipeName   string         `json:"recipe_name,omitempty" gorm:"-"`
 }
 
 // CreateDiaryEntryRequest represents the request to create a diary entry

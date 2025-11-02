@@ -58,6 +58,9 @@ func (r *Repository) GetByDate(userID uint, date time.Time) ([]DiaryEntry, error
 		return nil, fmt.Errorf("failed to get diary entries: %w", result.Error)
 	}
 
+	// Populate FoodName and RecipeName
+	r.populateNames(&entries)
+
 	return entries, nil
 }
 
@@ -72,6 +75,9 @@ func (r *Repository) GetByDateRange(userID uint, startDate, endDate time.Time) (
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get diary entries: %w", result.Error)
 	}
+
+	// Populate FoodName and RecipeName
+	r.populateNames(&entries)
 
 	return entries, nil
 }
@@ -147,4 +153,29 @@ func (r *Repository) GetDailySummary(userID uint, date time.Time) (map[string]fl
 		"fat":      result.TotalFat,
 		"fiber":    result.TotalFiber,
 	}, nil
+}
+
+// populateNames populates food_name and recipe_name for diary entries
+func (r *Repository) populateNames(entries *[]DiaryEntry) {
+	for i := range *entries {
+		entry := &(*entries)[i]
+
+		// Populate food name if food_id is set
+		if entry.FoodID != nil {
+			var foodName string
+			err := r.db.Table("foods").Select("name").Where("id = ?", *entry.FoodID).Scan(&foodName).Error
+			if err == nil {
+				entry.FoodName = foodName
+			}
+		}
+
+		// Populate recipe name if recipe_id is set
+		if entry.RecipeID != nil {
+			var recipeName string
+			err := r.db.Table("recipes").Select("name").Where("id = ?", *entry.RecipeID).Scan(&recipeName).Error
+			if err == nil {
+				entry.RecipeName = recipeName
+			}
+		}
+	}
 }
