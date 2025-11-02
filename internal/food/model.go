@@ -11,7 +11,7 @@ type Food struct {
 	ID          uint           `json:"id" gorm:"primarykey"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt   gorm.DeletedAt `json:"deletedI_at,omitempty" gorm:"index"`
 	Name        string         `json:"name" gorm:"type:varchar(255);not null"`
 	Description string         `json:"description" gorm:"type:text"`
 	Calories    float64        `json:"calories" gorm:"type:decimal(10,2)"`

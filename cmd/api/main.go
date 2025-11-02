@@ -11,6 +11,7 @@ import (
 	"ultra-bis/internal/food"
 	"ultra-bis/internal/goal"
 	"ultra-bis/internal/metrics"
+	"ultra-bis/internal/recipe"
 	"ultra-bis/internal/user"
 )
 
@@ -26,6 +27,8 @@ func main() {
 	if err := db.AutoMigrate(
 		&user.User{},
 		&food.Food{},
+		&recipe.Recipe{},
+		&recipe.RecipeIngredient{},
 		&goal.NutritionGoal{},
 		&diary.DiaryEntry{},
 		&metrics.BodyMetric{},
@@ -37,6 +40,7 @@ func main() {
 	// Initialize repositories
 	userRepo := user.NewRepository(db)
 	foodRepo := food.NewRepository(db)
+	recipeRepo := recipe.NewRepository(db)
 	goalRepo := goal.NewRepository(db)
 	diaryRepo := diary.NewRepository(db)
 	metricsRepo := metrics.NewRepository(db)
@@ -44,9 +48,14 @@ func main() {
 	// Initialize handlers
 	authHandler := auth.NewHandler(userRepo)
 	foodHandler := food.NewHandler(foodRepo)
+	recipeHandler := recipe.NewHandler(recipeRepo, foodRepo)
 	goalHandler := goal.NewHandler(goalRepo, userRepo)
 	diaryHandler := diary.NewHandler(diaryRepo, foodRepo, goalRepo)
 	metricsHandler := metrics.NewHandler(metricsRepo, userRepo)
+
+	// Set recipe repository in diary handler (to avoid circular dependency)
+	recipeAdapter := recipe.NewDiaryRecipeAdapter(recipeRepo)
+	diaryHandler.SetRecipeRepo(recipeAdapter)
 
 	// Setup routes
 	mux := http.NewServeMux()
@@ -54,6 +63,7 @@ func main() {
 	// Register all routes
 	auth.RegisterRoutes(mux, authHandler)
 	food.RegisterRoutes(mux, foodHandler)
+	recipe.RegisterRoutes(mux, recipeHandler)
 	goal.RegisterRoutes(mux, goalHandler)
 	diary.RegisterRoutes(mux, diaryHandler)
 	metrics.RegisterRoutes(mux, metricsHandler)
@@ -82,6 +92,16 @@ func main() {
 	log.Println("  GET    /foods/{id}             - Get food by ID")
 	log.Println("  PUT    /foods/{id}             - Update food")
 	log.Println("  DELETE /foods/{id}             - Delete food")
+	log.Println("-------------------------------------------")
+	log.Println("RECIPES:")
+	log.Println("  POST   /recipes                - Create recipe (protected)")
+	log.Println("  GET    /recipes                - List recipes (protected, query: user_only=true/false)")
+	log.Println("  GET    /recipes/{id}           - Get recipe with nutrition (protected)")
+	log.Println("  PUT    /recipes/{id}           - Update recipe (protected)")
+	log.Println("  DELETE /recipes/{id}           - Delete recipe (protected)")
+	log.Println("  POST   /recipes/{id}/ingredients      - Add ingredient (protected)")
+	log.Println("  PUT    /recipes/{id}/ingredients/{iid} - Update ingredient (protected)")
+	log.Println("  DELETE /recipes/{id}/ingredients/{iid} - Remove ingredient (protected)")
 	log.Println("-------------------------------------------")
 	log.Println("NUTRITION GOALS:")
 	log.Println("  POST   /goals                  - Create goal (protected)")

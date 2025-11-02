@@ -1,0 +1,526 @@
+### RECIPE API - Complete Test Suite
+### Note: Replace {{token}} with actual JWT token after login
+
+###############################################
+### 0. SETUP - Authentication & Foods
+###############################################
+
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJlbWFpbCI6Imp1anVnYXJzaWFAZ21haWwuY29tIiwiZXhwIjoxNzYyMTU5NDM0LCJpYXQiOjE3NjIwNzMwMzR9.gWtzkHEpPD4eb-C-shb9YTmOWuiWuR8SvjhOOjA4vR8
+
+### Register new user (if needed)
+POST http://localhost:8080/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123",
+  "name": "Test User"
+}
+
+###
+
+### Login to get token
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "email": "jujugarsia@gmail.com",
+  "password": "Julien1511"
+}
+
+###
+
+### Create test food 1 - Chicken Breast
+POST http://localhost:8080/foods
+Content-Type: application/json
+
+{
+  "name": "Chicken Breast",
+  "description": "Grilled skinless chicken breast, 100g",
+  "calories": 165,
+  "protein": 31,
+  "carbs": 0,
+  "fat": 3.6,
+  "fiber": 0
+}
+
+###
+
+### Create test food 2 - Brown Rice
+POST http://localhost:8080/foods
+Content-Type: application/json
+
+{
+  "name": "Brown Rice",
+  "description": "Cooked brown rice, 100g",
+  "calories": 111,
+  "protein": 2.6,
+  "carbs": 23,
+  "fat": 0.9,
+  "fiber": 1.8
+}
+
+###
+
+### Create test food 3 - Olive Oil
+POST http://localhost:8080/foods
+Content-Type: application/json
+
+{
+  "name": "Olive Oil",
+  "description": "Extra virgin olive oil, 1 tbsp (15ml)",
+  "calories": 119,
+  "protein": 0,
+  "carbs": 0,
+  "fat": 13.5,
+  "fiber": 0
+}
+
+###
+
+### Create test food 4 - Broccoli
+POST http://localhost:8080/foods
+Content-Type: application/json
+
+{
+  "name": "Broccoli",
+  "description": "Steamed broccoli, 100g",
+  "calories": 35,
+  "protein": 2.4,
+  "carbs": 7,
+  "fat": 0.4,
+  "fiber": 2.6
+}
+
+###
+
+### Create test food 5 - Salmon
+POST http://localhost:8080/foods
+Content-Type: application/json
+
+{
+  "name": "Salmon",
+  "description": "Atlantic salmon, baked, 100g",
+  "calories": 206,
+  "protein": 22,
+  "carbs": 0,
+  "fat": 13,
+  "fiber": 0
+}
+
+###
+
+### Get all foods (verify they exist)
+GET http://localhost:8080/foods
+
+###
+
+###############################################
+### 1. CREATE RECIPES
+###############################################
+
+### Create Recipe 1 - Chicken & Rice Bowl (Protected)
+POST http://localhost:8080/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Chicken & Rice Bowl",
+  "serving_size": 1,
+  "ingredients": [
+    {
+      "food_id": 1,
+      "quantity": 2
+    },
+    {
+      "food_id": 2,
+      "quantity": 1.5
+    },
+    {
+      "food_id": 3,
+      "quantity": 1
+    },
+    {
+      "food_id": 4,
+      "quantity": 1
+    }
+  ]
+}
+
+###
+
+### Create Recipe 2 - Simple Salmon Dinner (Protected)
+POST http://localhost:8080/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Simple Salmon Dinner",
+  "serving_size": 1,
+  "ingredients": [
+    {
+      "food_id": 5,
+      "quantity": 1.5
+    },
+    {
+      "food_id": 2,
+      "quantity": 1
+    },
+    {
+      "food_id": 4,
+      "quantity": 2
+    },
+    {
+      "food_id": 3,
+      "quantity": 0.5
+    }
+  ]
+}
+
+###
+
+### Create Recipe 4 - Minimal Ingredients (Protected)
+POST http://localhost:8080/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Chicken & Broccoli",
+  "serving_size": 1,
+  "ingredients": [
+    {
+      "food_id": 1,
+      "quantity": 1
+    },
+    {
+      "food_id": 4,
+      "quantity": 2
+    }
+  ]
+}
+
+###
+
+###############################################
+### 2. READ RECIPES
+###############################################
+
+### Get all user's recipes (Protected)
+GET http://localhost:8080/recipes
+Authorization: Bearer {{token}}
+
+###
+
+### Get only user's own recipes, exclude global (Protected)
+GET http://localhost:8080/recipes?user_only=true
+Authorization: Bearer {{token}}
+
+###
+
+### Get user's recipes including global ones (Protected)
+GET http://localhost:8080/recipes?user_only=false
+Authorization: Bearer {{token}}
+
+###
+
+### Get recipe by ID with nutrition calculation (Protected)
+GET http://localhost:8080/recipes/1
+Authorization: Bearer {{token}}
+
+###
+
+### Get recipe by ID (ID: 2) with nutrition (Protected)
+GET http://localhost:8080/recipes/2
+Authorization: Bearer {{token}}
+
+###
+
+### Get non-existent recipe (should return 404) (Protected)
+GET http://localhost:8080/recipes/999
+Authorization: Bearer {{token}}
+
+###
+
+###############################################
+### 3. UPDATE RECIPES
+###############################################
+
+### Update recipe name and serving size (Protected)
+PUT http://localhost:8080/recipes/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Chicken & Rice Bowl - Updated",
+  "serving_size": 1.5
+}
+
+###
+
+### Update recipe (only name)
+PUT http://localhost:8080/recipes/2
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Deluxe Salmon Dinner"
+}
+
+###
+
+### Try to update another user's recipe (should fail if different user)
+PUT http://localhost:8080/recipes/1
+Authorization: Bearer DIFFERENT_USER_TOKEN
+Content-Type: application/json
+
+{
+  "name": "Hacked Recipe Name"
+}
+
+###
+
+###############################################
+### 4. MANAGE INGREDIENTS
+###############################################
+
+### Add new ingredient to recipe (Protected)
+POST http://localhost:8080/recipes/1/ingredients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 5,
+  "quantity": 0.5
+}
+
+###
+
+### Add another ingredient to recipe 2
+POST http://localhost:8080/recipes/2/ingredients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 1,
+  "quantity": 1
+}
+
+###
+
+### Update ingredient quantity (Protected)
+### Note: Replace {ingredient_id} with actual ID from recipe details
+PUT http://localhost:8080/recipes/1/ingredients/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantity": 3
+}
+
+###
+
+### Update another ingredient quantity
+PUT http://localhost:8080/recipes/1/ingredients/2
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantity": 2.5
+}
+
+###
+
+### Remove ingredient from recipe (Protected)
+DELETE http://localhost:8080/recipes/1/ingredients/1
+Authorization: Bearer {{token}}
+
+###
+
+### Try to remove ingredient from another user's recipe (should fail)
+DELETE http://localhost:8080/recipes/1/ingredients/2
+Authorization: Bearer DIFFERENT_USER_TOKEN
+
+###
+
+###############################################
+### 5. DIARY INTEGRATION - Log Recipes
+###############################################
+
+### Log recipe as breakfast (Protected)
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 1,
+  "date": "2025-01-15",
+  "meal_type": "breakfast",
+  "serving_size": 1,
+  "notes": "Delicious recipe meal"
+}
+
+###
+
+### Log recipe as lunch with custom serving size (Protected)
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 2,
+  "date": "2025-01-15",
+  "meal_type": "lunch",
+  "serving_size": 1.5,
+  "notes": "Extra hungry today"
+}
+
+###
+
+### Log recipe as dinner (Protected)
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 3,
+  "date": "2025-01-15",
+  "meal_type": "dinner",
+  "serving_size": 2
+}
+
+###
+
+### Get diary entries for the day to see recipes logged
+GET http://localhost:8080/diary/entries?date=2025-01-15
+Authorization: Bearer {{token}}
+
+###
+
+### Get daily summary with recipes included
+GET http://localhost:8080/diary/summary/2025-01-15
+Authorization: Bearer {{token}}
+
+###
+
+###############################################
+### 6. DELETE RECIPES
+###############################################
+
+### Delete recipe (Protected - only owner can delete)
+DELETE http://localhost:8080/recipes/4
+Authorization: Bearer {{token}}
+
+###
+
+### Try to delete another user's recipe (should fail)
+DELETE http://localhost:8080/recipes/1
+Authorization: Bearer DIFFERENT_USER_TOKEN
+
+###
+
+### Try to delete another user's recipe (should fail - forbidden)
+DELETE http://localhost:8080/recipes/2
+Authorization: Bearer {{token}}
+
+###
+
+### Verify recipe is deleted (Protected)
+GET http://localhost:8080/recipes/4
+Authorization: Bearer {{token}}
+
+###
+
+###############################################
+### 7. ERROR CASES & VALIDATION
+###############################################
+
+### Create recipe with missing name (should fail)
+POST http://localhost:8080/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "serving_size": 1,
+  "ingredients": [
+    {
+      "food_id": 1,
+      "quantity": 1
+    }
+  ]
+}
+
+###
+
+### Create recipe with no ingredients (should fail)
+POST http://localhost:8080/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Empty Recipe",
+  "serving_size": 1,
+  "ingredients": []
+}
+
+###
+
+### Create recipe with invalid food_id (should fail)
+POST http://localhost:8080/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Recipe",
+  "serving_size": 1,
+  "ingredients": [
+    {
+      "food_id": 9999,
+      "quantity": 1
+    }
+  ]
+}
+
+###
+
+### Add ingredient with invalid food_id (should fail)
+POST http://localhost:8080/recipes/1/ingredients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 9999,
+  "quantity": 1
+}
+
+###
+
+### Update ingredient with zero quantity (should fail)
+PUT http://localhost:8080/recipes/1/ingredients/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantity": 0
+}
+
+###
+
+### Update ingredient with negative quantity (should fail)
+PUT http://localhost:8080/recipes/1/ingredients/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantity": -5
+}
+
+###
+
+###############################################
+### 8. HEALTH CHECK
+###############################################
+
+### Health check
+GET http://localhost:8080/health
+
+###

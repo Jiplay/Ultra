@@ -13,18 +13,44 @@ import (
 
 // Handler handles diary entry requests
 type Handler struct {
-	repo     *Repository
-	foodRepo *food.Repository
-	goalRepo *goal.Repository
+	repo       *Repository
+	foodRepo   *food.Repository
+	goalRepo   *goal.Repository
+	recipeRepo RecipeRepository
+}
+
+// RecipeRepository interface for recipe operations needed by diary
+type RecipeRepository interface {
+	GetByID(id int) (Recipe, error)
+	GetIngredients(recipeID int) ([]RecipeIngredient, error)
+}
+
+// Recipe represents a recipe with basic info
+type Recipe struct {
+	ID          uint
+	Name        string
+	ServingSize float64
+}
+
+// RecipeIngredient represents an ingredient in a recipe
+type RecipeIngredient struct {
+	FoodID   uint
+	Quantity float64
 }
 
 // NewHandler creates a new diary handler
 func NewHandler(repo *Repository, foodRepo *food.Repository, goalRepo *goal.Repository) *Handler {
 	return &Handler{
-		repo:     repo,
-		foodRepo: foodRepo,
-		goalRepo: goalRepo,
+		repo:       repo,
+		foodRepo:   foodRepo,
+		goalRepo:   goalRepo,
+		recipeRepo: nil, // Will be set via SetRecipeRepo
 	}
+}
+
+// SetRecipeRepo sets the recipe repository (to avoid circular dependency)
+func (h *Handler) SetRecipeRepo(recipeRepo RecipeRepository) {
+	h.recipeRepo = recipeRepo
 }
 
 // ErrorResponse represents an error response
@@ -110,6 +136,49 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 		entry.Carbs = foodItem.Carbs * req.ServingSize
 		entry.Fat = foodItem.Fat * req.ServingSize
 		entry.Fiber = foodItem.Fiber * req.ServingSize
+	}
+
+	// Calculate nutrition if recipe_id is provided
+	if req.RecipeID != nil {
+		if h.recipeRepo == nil {
+			writeError(w, http.StatusInternalServerError, "Recipe repository not initialized")
+			return
+		}
+
+		_, err := h.recipeRepo.GetByID(int(*req.RecipeID))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "Recipe not found")
+			return
+		}
+
+		ingredients, err := h.recipeRepo.GetIngredients(int(*req.RecipeID))
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "Failed to load recipe ingredients")
+			return
+		}
+
+		// Calculate total nutrition from all ingredients
+		var totalCalories, totalProtein, totalCarbs, totalFat, totalFiber float64
+
+		for _, ingredient := range ingredients {
+			foodItem, err := h.foodRepo.GetByID(int(ingredient.FoodID))
+			if err != nil {
+				continue // Skip if food not found
+			}
+
+			totalCalories += foodItem.Calories * ingredient.Quantity
+			totalProtein += foodItem.Protein * ingredient.Quantity
+			totalCarbs += foodItem.Carbs * ingredient.Quantity
+			totalFat += foodItem.Fat * ingredient.Quantity
+			totalFiber += foodItem.Fiber * ingredient.Quantity
+		}
+
+		// Apply serving size multiplier
+		entry.Calories = totalCalories * req.ServingSize
+		entry.Protein = totalProtein * req.ServingSize
+		entry.Carbs = totalCarbs * req.ServingSize
+		entry.Fat = totalFat * req.ServingSize
+		entry.Fiber = totalFiber * req.ServingSize
 	}
 
 	if err := h.repo.Create(entry); err != nil {
