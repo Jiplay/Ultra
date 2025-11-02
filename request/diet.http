@@ -21,11 +21,15 @@ Content-Type: application/json
   "password": "password123"
 }
 
-### 3. Get current user profile
+### 3. Get available diets and protocols
+GET http://localhost:8080/goals/diets
+Authorization: Bearer {{token}}
+
+### 4. Get current user profile
 GET http://localhost:8080/auth/me
 Authorization: Bearer {{token}}
 
-### 4. Update user profile with required diet data
+### 5. Update user profile with required diet data
 # Required fields: age, height, weight, body_fat
 PUT http://localhost:8080/users/profile
 Authorization: Bearer {{token}}
@@ -42,7 +46,7 @@ Content-Type: application/json
   "goal_type": "maintain"
 }
 
-### 5. Calculate diet - Protocol 1 (Muscle Building)
+### 6. Calculate diet - Protocol 1 (Muscle Building)
 # Returns: Maintenance, +200, +400 calories with macros
 POST http://localhost:8080/goals/calculate
 Authorization: Bearer {{token}}
@@ -53,7 +57,7 @@ Content-Type: application/json
   "protocol": 3
 }
 
-### 6. Calculate diet - Protocol 2 (Recomposition)
+### 7. Calculate diet - Protocol 2 (Recomposition)
 # Returns: -300 calories with macros
 POST http://localhost:8080/goals/calculate
 Authorization: Bearer {{token}}
@@ -64,7 +68,7 @@ Content-Type: application/json
   "protocol": 2
 }
 
-### 7. Calculate diet - Protocol 3 (Perfect Deficit)
+### 8. Calculate diet - Protocol 3 (Perfect Deficit)
 # Returns: -300, -500 calories with macros
 POST http://localhost:8080/goals/calculate
 Authorization: Bearer {{token}}
@@ -75,7 +79,7 @@ Content-Type: application/json
   "protocol": 3
 }
 
-### 8. Calculate diet - Protocol 4 (Progressive Fat Loss)
+### 9. Calculate diet - Protocol 4 (Progressive Fat Loss)
 # Returns: -300, -500, -700 calories with macros
 POST http://localhost:8080/goals/calculate
 Authorization: Bearer {{token}}
@@ -86,7 +90,7 @@ Content-Type: application/json
   "protocol": 4
 }
 
-### 9. Create a goal from calculated values (example using Protocol 2 Phase 1)
+### 10. Create a goal from calculated values (example using Protocol 2 Phase 1)
 # Copy calories, protein, carbs, fat from the calculate response
 POST http://localhost:8080/goals
 Authorization: Bearer {{token}}
@@ -101,7 +105,7 @@ Content-Type: application/json
   "start_date": "2025-01-15"
 }
 
-### 10. Test with missing profile data (should return error)
+### 11. Test with missing profile data (should return error)
 # First, create a new user without profile data
 POST http://localhost:8080/auth/register
 Content-Type: application/json
@@ -112,7 +116,7 @@ Content-Type: application/json
   "name": "Incomplete User"
 }
 
-### 11. Try to calculate without profile data (should fail)
+### 12. Try to calculate without profile data (should fail)
 POST http://localhost:8080/goals/calculate
 Authorization: Bearer INCOMPLETE_USER_TOKEN_HERE
 Content-Type: application/json
@@ -122,7 +126,7 @@ Content-Type: application/json
   "protocol": 2
 }
 
-### 12. Test invalid protocol (should return error)
+### 13. Test invalid protocol (should return error)
 POST http://localhost:8080/goals/calculate
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -132,7 +136,7 @@ Content-Type: application/json
   "protocol": 5
 }
 
-### 13. Test invalid diet model (should return error)
+### 14. Test invalid diet model (should return error)
 POST http://localhost:8080/goals/calculate
 Authorization: Bearer {{token}}
 Content-Type: application/json

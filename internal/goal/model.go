@@ -121,3 +121,23 @@ type CalculateDietResponse struct {
 	Phases         []DietPhaseResponse `json:"phases"`
 	Message        string              `json:"message"`
 }
+
+// ProtocolInfo represents information about a diet protocol
+type ProtocolInfo struct {
+	Number      int    `json:"number"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// AvailableDiet represents a diet model with its available protocols
+type AvailableDiet struct {
+	ModelName   string         `json:"model_name"`
+	DisplayName string         `json:"display_name"`
+	Description string         `json:"description"`
+	Protocols   []ProtocolInfo `json:"protocols"`
+}
+
+// AvailableDietsResponse represents the response for available diets endpoint
+type AvailableDietsResponse struct {
+	Diets []AvailableDiet `json:"diets"`
+}

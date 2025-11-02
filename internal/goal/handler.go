@@ -392,6 +392,49 @@ func getActivityMultiplier(level user.ActivityLevel) float64 {
 	}
 }
 
+// GetAvailableDiets handles GET /goals/diets
+func (h *Handler) GetAvailableDiets(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// Build the response with all available diet models and protocols
+	response := AvailableDietsResponse{
+		Diets: []AvailableDiet{
+			{
+				ModelName:   "zeroToHero",
+				DisplayName: "Zero to Hero",
+				Description: "Comprehensive diet program with 4 protocols for different goals: muscle building, recomposition, and fat loss",
+				Protocols: []ProtocolInfo{
+					{
+						Number:      1,
+						Name:        "Protocole 1 : Prise de muscle propre",
+						Description: "Muscle building protocol with progressive caloric surplus (3 phases: maintenance, moderate surplus, high surplus)",
+					},
+					{
+						Number:      2,
+						Name:        "Protocole 2 : Recomposition corporelle",
+						Description: "Body recomposition protocol for simultaneous fat loss and muscle gain (single phase with slight deficit)",
+					},
+					{
+						Number:      3,
+						Name:        "Protocole 3 : Créer le déficit parfait",
+						Description: "Perfect deficit protocol for controlled fat loss (2 phases: moderate and higher deficit)",
+					},
+					{
+						Number:      4,
+						Name:        "Protocole 4 : Perte de gras progressive",
+						Description: "Progressive fat loss protocol with gradual caloric reduction (3 phases: initial, moderate, and aggressive deficit)",
+					},
+				},
+			},
+		},
+	}
+
+	writeJSON(w, http.StatusOK, response)
+}
+
 // extractID extracts the ID from the URL path
 func extractID(path, prefix string) (int, error) {
 	idStr := strings.TrimPrefix(path, prefix)
