@@ -5,7 +5,7 @@
 ### 1. AUTHENTICATION
 ###############################################
 
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6ImF0aGxldGVAZXhhbXBsZS5jb20iLCJleHAiOjE3NjA4OTkyNzAsImlhdCI6MTc2MDgxMjg3MH0.eGv2hREAa2kVlOP3VL7_bJEIEOZ1CV2_LCkgTr0Gpy8
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJlbWFpbCI6Imp1anVnYXJzaWFAZ21haWwuY29tIiwiZXhwIjoxNzYyMTU5NDM0LCJpYXQiOjE3NjIwNzMwMzR9.gWtzkHEpPD4eb-C-shb9YTmOWuiWuR8SvjhOOjA4vR8
 
 ### Register new user
 POST http://localhost:8080/auth/register
@@ -223,7 +223,7 @@ Content-Type: application/json
 ###
 
 ### Get diary entries for specific date (Protected)
-GET http://localhost:8080/diary/entries?date=2025-01-15
+GET http://localhost:8080/diary/entries?date=2025-11-02
 Authorization: Bearer {{token}}
 
 ###

@@ -23,6 +23,7 @@ func RegisterRoutes(mux *http.ServeMux, handler *Handler) {
 
 	mux.HandleFunc("/goals/all", auth.JWTMiddleware(handler.GetAllGoals))
 	mux.HandleFunc("/goals/recommended", auth.JWTMiddleware(handler.GetRecommendedGoals))
+	mux.HandleFunc("/goals/calculate", auth.JWTMiddleware(handler.CalculateDietGoals))
 
 	mux.HandleFunc("/goals/", auth.JWTMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if strings.TrimPrefix(r.URL.Path, "/goals/") == "" {

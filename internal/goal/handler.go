@@ -287,6 +287,85 @@ func (h *Handler) GetRecommendedGoals(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, response)
 }
 
+// CalculateDietGoals handles POST /goals/calculate
+func (h *Handler) CalculateDietGoals(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	userID, ok := r.Context().Value("user_id").(uint)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	var req CalculateDietRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Get user data
+	user, err := h.userRepo.GetByID(userID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "User not found")
+		return
+	}
+
+	// Validate request using the factory pattern
+	if err := ValidateDietRequest(&req, user); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Get the appropriate calculator
+	calculator, err := GetDietCalculator(req.DietModel)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Perform calculations
+	result, err := calculator.Calculate(user, req.Protocol)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("Calculation failed: %v", err))
+		return
+	}
+
+	// Convert to response format
+	response := h.buildDietResponse(result)
+
+	writeJSON(w, http.StatusOK, response)
+}
+
+// buildDietResponse converts DietCalculationResult to CalculateDietResponse
+func (h *Handler) buildDietResponse(result *DietCalculationResult) CalculateDietResponse {
+	// Convert phases to response format with rounding
+	phases := make([]DietPhaseResponse, len(result.Phases))
+	for i, phase := range result.Phases {
+		phases[i] = DietPhaseResponse{
+			Phase:       phase.Phase,
+			Calories:    math.Round(phase.Calories),
+			Protein:     math.Round(phase.Protein),
+			Carbs:       math.Round(phase.Carbs),
+			Fat:         math.Round(phase.Fat),
+			Description: phase.Description,
+		}
+	}
+
+	return CalculateDietResponse{
+		DietModel:      result.ModelName,
+		Protocol:       result.Protocol,
+		ProtocolName:   result.ProtocolName,
+		BMR:            math.Round(result.BMR),
+		MaintenanceMMR: math.Round(result.MaintenanceMMR),
+		LeanMass:       math.Round(result.LeanMass*10) / 10, // Round to 1 decimal
+		Phases:         phases,
+		Message:        fmt.Sprintf("Calculated using %s - %s", result.ModelName, result.ProtocolName),
+	}
+}
+
 // calculateBMR calculates Basal Metabolic Rate using Mifflin-St Jeor Equation
 func calculateBMR(weight, height, age float64, gender string) float64 {
 	if gender == "male" {

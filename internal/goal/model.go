@@ -93,3 +93,31 @@ type RecommendedGoalResponse struct {
 	Fiber    float64 `json:"fiber"`
 	Message  string  `json:"message"`
 }
+
+// CalculateDietRequest represents the request to calculate diet goals
+type CalculateDietRequest struct {
+	DietModel string `json:"diet_model"` // e.g., "zeroToHero"
+	Protocol  int    `json:"protocol"`   // Protocol number (1-4 for Zero to Hero)
+}
+
+// DietPhaseResponse represents a single phase of a diet protocol
+type DietPhaseResponse struct {
+	Phase       int     `json:"phase"`
+	Calories    float64 `json:"calories"`
+	Protein     float64 `json:"protein"`
+	Carbs       float64 `json:"carbs"`
+	Fat         float64 `json:"fat"`
+	Description string  `json:"description"`
+}
+
+// CalculateDietResponse represents the response from diet calculation
+type CalculateDietResponse struct {
+	DietModel      string              `json:"diet_model"`
+	Protocol       int                 `json:"protocol"`
+	ProtocolName   string              `json:"protocol_name"`
+	BMR            float64             `json:"bmr"`
+	MaintenanceMMR float64             `json:"maintenance_mmr"`
+	LeanMass       float64             `json:"lean_mass"`
+	Phases         []DietPhaseResponse `json:"phases"`
+	Message        string              `json:"message"`
+}

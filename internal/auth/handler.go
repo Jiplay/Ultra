@@ -201,6 +201,12 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	if req.Height > 0 {
 		foundUser.Height = req.Height
 	}
+	if req.Weight > 0 {
+		foundUser.Weight = req.Weight
+	}
+	if req.BodyFat > 0 {
+		foundUser.BodyFat = req.BodyFat
+	}
 	if req.ActivityLevel != "" {
 		foundUser.ActivityLevel = req.ActivityLevel
 	}

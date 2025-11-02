@@ -1,0 +1,164 @@
+### Zero to Hero Diet Calculator Testing
+
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2LCJlbWFpbCI6ImRpZXQtdGVzdEBleGFtcGxlLmNvbSIsImV4cCI6MTc2MjIwMjk2MSwiaWF0IjoxNzYyMTE2NTYxfQ.tPpQAtaHHwPN0r1UYovJzWQ8ZjLecc4upzlfTtmToVs
+
+### 1. Register a new user
+POST http://localhost:8080/auth/register
+Content-Type: application/json
+
+{
+  "email": "diet-test@example.com",
+  "password": "password123",
+  "name": "Diet Test User"
+}
+
+### 2. Login (use this if user already exists)
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "email": "diet-test@example.com",
+  "password": "password123"
+}
+
+### 3. Get current user profile
+GET http://localhost:8080/auth/me
+Authorization: Bearer {{token}}
+
+### 4. Update user profile with required diet data
+# Required fields: age, height, weight, body_fat
+PUT http://localhost:8080/users/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Diet Test User",
+  "age": 23,
+  "height": 169,
+  "weight": 73,
+  "body_fat": 15,
+  "gender": "male",
+  "activity_level": "moderate",
+  "goal_type": "maintain"
+}
+
+### 5. Calculate diet - Protocol 1 (Muscle Building)
+# Returns: Maintenance, +200, +400 calories with macros
+POST http://localhost:8080/goals/calculate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "diet_model": "zeroToHero",
+  "protocol": 3
+}
+
+### 6. Calculate diet - Protocol 2 (Recomposition)
+# Returns: -300 calories with macros
+POST http://localhost:8080/goals/calculate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "diet_model": "zeroToHero",
+  "protocol": 2
+}
+
+### 7. Calculate diet - Protocol 3 (Perfect Deficit)
+# Returns: -300, -500 calories with macros
+POST http://localhost:8080/goals/calculate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "diet_model": "zeroToHero",
+  "protocol": 3
+}
+
+### 8. Calculate diet - Protocol 4 (Progressive Fat Loss)
+# Returns: -300, -500, -700 calories with macros
+POST http://localhost:8080/goals/calculate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "diet_model": "zeroToHero",
+  "protocol": 4
+}
+
+### 9. Create a goal from calculated values (example using Protocol 2 Phase 1)
+# Copy calories, protein, carbs, fat from the calculate response
+POST http://localhost:8080/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "calories": 2384,
+  "protein": 134,
+  "carbs": 312,
+  "fat": 74,
+  "fiber": 33,
+  "start_date": "2025-01-15"
+}
+
+### 10. Test with missing profile data (should return error)
+# First, create a new user without profile data
+POST http://localhost:8080/auth/register
+Content-Type: application/json
+
+{
+  "email": "incomplete-user@example.com",
+  "password": "password123",
+  "name": "Incomplete User"
+}
+
+### 11. Try to calculate without profile data (should fail)
+POST http://localhost:8080/goals/calculate
+Authorization: Bearer INCOMPLETE_USER_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "diet_model": "zeroToHero",
+  "protocol": 2
+}
+
+### 12. Test invalid protocol (should return error)
+POST http://localhost:8080/goals/calculate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "diet_model": "zeroToHero",
+  "protocol": 5
+}
+
+### 13. Test invalid diet model (should return error)
+POST http://localhost:8080/goals/calculate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "diet_model": "invalidModel",
+  "protocol": 2
+}
+
+### Expected Response Example (Protocol 2):
+# {
+#   "diet_model": "zeroToHero",
+#   "protocol": 2,
+#   "protocol_name": "Protocole 2 : Recomposition corporelle",
+#   "bmr": 1790,
+#   "maintenance_mmr": 2684,
+#   "lean_mass": 62.1,
+#   "phases": [
+#     {
+#       "phase": 1,
+#       "calories": 2384,
+#       "protein": 134,
+#       "carbs": 312,
+#       "fat": 74,
+#       "description": "Recomposition phase"
+#     }
+#   ],
+#   "message": "Calculated using zeroToHero - Protocole 2 : Recomposition corporelle"
+# }

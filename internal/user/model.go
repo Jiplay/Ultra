@@ -39,6 +39,8 @@ type User struct {
 	Age           int           `json:"age"`
 	Gender        string        `json:"gender" gorm:"type:varchar(10)"`
 	Height        float64       `json:"height" gorm:"type:decimal(5,2)"` // in cm
+	Weight        float64       `json:"weight" gorm:"type:decimal(6,2)"` // in kg
+	BodyFat       float64       `json:"body_fat" gorm:"type:decimal(5,2)"` // body fat percentage
 	ActivityLevel ActivityLevel `json:"activity_level" gorm:"type:varchar(20);default:'moderate'"`
 	GoalType      GoalType      `json:"goal_type" gorm:"type:varchar(20);default:'maintain'"`
 }
@@ -68,6 +70,8 @@ type UpdateProfileRequest struct {
 	Age           int           `json:"age"`
 	Gender        string        `json:"gender"`
 	Height        float64       `json:"height"`
+	Weight        float64       `json:"weight"`
+	BodyFat       float64       `json:"body_fat"`
 	ActivityLevel ActivityLevel `json:"activity_level"`
 	GoalType      GoalType      `json:"goal_type"`
 }
