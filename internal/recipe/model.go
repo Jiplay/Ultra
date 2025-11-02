@@ -68,3 +68,32 @@ type RecipeWithNutrition struct {
 	Fat      float64 `json:"fat"`
 	Fiber    float64 `json:"fiber"`
 }
+
+// IngredientWithDetails represents an ingredient with food details and calculated nutrition
+type IngredientWithDetails struct {
+	ID       uint    `json:"id"`
+	FoodID   uint    `json:"food_id"`
+	FoodName string  `json:"food_name"`
+	Quantity float64 `json:"quantity"`
+	Calories float64 `json:"calories"`
+	Protein  float64 `json:"protein"`
+	Carbs    float64 `json:"carbs"`
+	Fat      float64 `json:"fat"`
+	Fiber    float64 `json:"fiber"`
+}
+
+// RecipeListResponse represents a recipe with nutrition for list endpoints
+type RecipeListResponse struct {
+	ID          uint                    `json:"id"`
+	CreatedAt   time.Time               `json:"created_at"`
+	UpdatedAt   time.Time               `json:"updated_at"`
+	Name        string                  `json:"name"`
+	ServingSize float64                 `json:"serving_size"`
+	UserID      *uint                   `json:"user_id,omitempty"`
+	Calories    float64                 `json:"calories"`
+	Protein     float64                 `json:"protein"`
+	Carbs       float64                 `json:"carbs"`
+	Fat         float64                 `json:"fat"`
+	Fiber       float64                 `json:"fiber"`
+	Ingredients []IngredientWithDetails `json:"ingredients"`
+}

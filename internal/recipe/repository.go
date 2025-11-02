@@ -118,3 +118,73 @@ func (r *Repository) CalculateNutrition(recipeID int, foodRepo *food.Repository)
 
 	return result, nil
 }
+
+// GetAllWithNutrition retrieves all recipes with nutrition and ingredient details
+func (r *Repository) GetAllWithNutrition(foodRepo *food.Repository) ([]RecipeListResponse, error) {
+	recipes, err := r.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	return r.enrichRecipesWithNutrition(recipes, foodRepo), nil
+}
+
+// GetByUserIDWithNutrition retrieves recipes for a user with nutrition and ingredient details
+func (r *Repository) GetByUserIDWithNutrition(userID uint, userOnly bool, foodRepo *food.Repository) ([]RecipeListResponse, error) {
+	recipes, err := r.GetByUserID(userID, userOnly)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.enrichRecipesWithNutrition(recipes, foodRepo), nil
+}
+
+// enrichRecipesWithNutrition calculates nutrition for each recipe and ingredient
+func (r *Repository) enrichRecipesWithNutrition(recipes []Recipe, foodRepo *food.Repository) []RecipeListResponse {
+	result := make([]RecipeListResponse, 0, len(recipes))
+
+	for _, recipe := range recipes {
+		enriched := RecipeListResponse{
+			ID:          recipe.ID,
+			CreatedAt:   recipe.CreatedAt,
+			UpdatedAt:   recipe.UpdatedAt,
+			Name:        recipe.Name,
+			ServingSize: recipe.ServingSize,
+			UserID:      recipe.UserID,
+			Ingredients: make([]IngredientWithDetails, 0, len(recipe.Ingredients)),
+		}
+
+		// Calculate nutrition for each ingredient
+		for _, ingredient := range recipe.Ingredients {
+			foodItem, err := foodRepo.GetByID(int(ingredient.FoodID))
+			if err != nil {
+				continue // Skip if food not found
+			}
+
+			ingredientDetail := IngredientWithDetails{
+				ID:       ingredient.ID,
+				FoodID:   ingredient.FoodID,
+				FoodName: foodItem.Name,
+				Quantity: ingredient.Quantity,
+				Calories: foodItem.Calories * ingredient.Quantity,
+				Protein:  foodItem.Protein * ingredient.Quantity,
+				Carbs:    foodItem.Carbs * ingredient.Quantity,
+				Fat:      foodItem.Fat * ingredient.Quantity,
+				Fiber:    foodItem.Fiber * ingredient.Quantity,
+			}
+
+			enriched.Ingredients = append(enriched.Ingredients, ingredientDetail)
+
+			// Add to recipe totals
+			enriched.Calories += ingredientDetail.Calories
+			enriched.Protein += ingredientDetail.Protein
+			enriched.Carbs += ingredientDetail.Carbs
+			enriched.Fat += ingredientDetail.Fat
+			enriched.Fiber += ingredientDetail.Fiber
+		}
+
+		result = append(result, enriched)
+	}
+
+	return result
+}

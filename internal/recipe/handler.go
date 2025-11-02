@@ -167,8 +167,8 @@ func (h *Handler) ListRecipes(w http.ResponseWriter, r *http.Request) {
 	userOnlyParam := r.URL.Query().Get("user_only")
 	userOnly := userOnlyParam == "true"
 
-	// Show user's recipes (with or without global recipes)
-	recipes, err := h.repo.GetByUserID(userID, userOnly)
+	// Get recipes with nutrition and ingredient details
+	recipes, err := h.repo.GetByUserIDWithNutrition(userID, userOnly, h.foodRepo)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
