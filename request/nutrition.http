@@ -322,6 +322,12 @@ Authorization: Bearer {{token}}
 
 ###
 
+### Get body metrics for specific date (Protected)
+GET http://localhost:8080/metrics/date/2025-01-15
+Authorization: Bearer {{token}}
+
+###
+
 ### Get 7-day trends (Protected)
 GET http://localhost:8080/metrics/trends?period=7d
 Authorization: Bearer {{token}}

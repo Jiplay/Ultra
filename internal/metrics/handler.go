@@ -74,18 +74,35 @@ func (h *Handler) CreateMetric(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	metric := &BodyMetric{
-		UserID: userID,
-		Date:   metricDate,
-		Weight: req.Weight,
-	}
-
-	if err := h.repo.Create(metric); err != nil {
+	// Check if metric already exists for this date
+	existingMetric, err := h.repo.GetByDate(userID, metricDate)
+	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, metric)
+	if existingMetric != nil {
+		// Update existing metric
+		existingMetric.Weight = req.Weight
+		if err := h.repo.Update(existingMetric); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, existingMetric)
+	} else {
+		// Create new metric
+		metric := &BodyMetric{
+			UserID: userID,
+			Date:   metricDate,
+			Weight: req.Weight,
+		}
+
+		if err := h.repo.Create(metric); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusCreated, metric)
+	}
 }
 
 // GetMetrics handles GET /metrics
@@ -126,6 +143,70 @@ func (h *Handler) GetLatest(w http.ResponseWriter, r *http.Request) {
 	metric, err := h.repo.GetLatest(userID)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "No metrics found")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, metric)
+}
+
+// GetWeekly handles GET /metrics/weekly
+func (h *Handler) GetWeekly(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	userID, ok := r.Context().Value("user_id").(uint)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	metrics, err := h.repo.GetWeekly(userID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, metrics)
+}
+
+// GetByDate handles GET /metrics/date/{date}
+func (h *Handler) GetByDate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	userID, ok := r.Context().Value("user_id").(uint)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Extract date from URL path
+	dateStr := strings.TrimPrefix(r.URL.Path, "/metrics/date/")
+	if dateStr == "" {
+		writeError(w, http.StatusBadRequest, "Date is required (use YYYY-MM-DD)")
+		return
+	}
+
+	// Parse date
+	metricDate, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
+		return
+	}
+
+	// Get metric for the date
+	metric, err := h.repo.GetByDate(userID, metricDate)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if metric == nil {
+		writeError(w, http.StatusNotFound, "No metric found for this date")
 		return
 	}
 

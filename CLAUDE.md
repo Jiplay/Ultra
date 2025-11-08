@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+# Instead of testing, create a http file in the request folder and the user will run it
+
 ## Project Overview
 
 **Ultra-Bis** is a comprehensive nutrition tracking REST API built with Go and PostgreSQL, designed for athletes and fitness enthusiasts. It provides functionality similar to Samsung Health or MyFitnessPal, including food logging, meal tracking, body metrics monitoring, and personalized nutrition goal recommendations.

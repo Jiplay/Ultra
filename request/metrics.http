@@ -1,0 +1,312 @@
+### BODY METRICS API - Test Suite
+### Note: Replace {{token}} with actual JWT token after login
+
+###############################################
+### AUTHENTICATION (Get Token First)
+###############################################
+
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6ImF0aGxldGVAZXhhbXBsZS5jb20iLCJleHAiOjE3NjI2ODYxMDcsImlhdCI6MTc2MjU5OTcwN30.QfNXq80d5Od2KFMvuVhhWGb_rFR3QedsV1TDK3MXE0o
+@tokenJulien=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJlbWFpbCI6Imp1anVnYXJzaWFAZ21haWwuY29tIiwiZXhwIjoxNzYyNjkxNjAyLCJpYXQiOjE3NjI2MDUyMDJ9.NsLInoZW6RJr1yrMkf10X2liO_raEqAosjfDJ2wSdYU
+### Login
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "email": "athlete@example.com",
+  "password": "password123"
+}
+
+
+### Login Julien
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "email": "jujugarsia@gmail.com",
+  "password": "Julien1511"
+}
+
+###
+
+###############################################
+### CREATE / UPDATE METRICS (UPSERT)
+###############################################
+
+### Log body weight for today (Protected)
+### Creates new entry if doesn't exist
+POST http://localhost:8080/metrics
+Authorization: Bearer {{tokenJulien}}
+Content-Type: application/json
+
+{
+  "weight": 75.2
+}
+
+###
+
+### Log body weight for specific date (Protected)
+### Creates new entry if doesn't exist
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2025-01-15",
+  "weight": 75.2
+}
+
+###
+
+### Update weight for same date (Protected)
+### Updates existing entry for 2025-01-15
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2025-01-15",
+  "weight": 74.8
+}
+
+###
+
+### Log weight for different dates (Protected)
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2025-01-08",
+  "weight": 76.0
+}
+
+###
+
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2025-01-10",
+  "weight": 75.8
+}
+
+###
+
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2025-01-12",
+  "weight": 75.5
+}
+
+###
+
+###############################################
+### RETRIEVE METRICS
+###############################################
+
+### Get all body metrics (Protected)
+### Returns all metrics ordered by date DESC
+GET http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+
+###
+
+### Get latest body metric (Protected)
+### Returns the most recent entry
+GET http://localhost:8080/metrics/latest
+Authorization: Bearer {{token}}
+
+###
+
+### Get weekly metrics (Protected)
+### Returns metrics for current week (Monday to Sunday)
+GET http://localhost:8080/metrics/weekly
+Authorization: Bearer {{token}}
+
+###
+
+###############################################
+### TRENDS & ANALYSIS
+###############################################
+
+### Get 7-day trends (Protected)
+### Shows weight change and average over last 7 days
+GET http://localhost:8080/metrics/trends?period=7d
+Authorization: Bearer {{token}}
+
+###
+
+### Get 30-day trends (Protected)
+### Shows weight change and average over last 30 days
+GET http://localhost:8080/metrics/trends?period=30d
+Authorization: Bearer {{token}}
+
+###
+
+### Get 90-day trends (Protected)
+### Shows weight change and average over last 90 days
+GET http://localhost:8080/metrics/trends?period=90d
+Authorization: Bearer {{token}}
+
+###
+
+###############################################
+### DELETE METRICS
+###############################################
+
+### Delete body metric by ID (Protected)
+DELETE http://localhost:8080/metrics/1
+Authorization: Bearer {{token}}
+
+###
+
+###############################################
+### EDGE CASES & VALIDATION
+###############################################
+
+### Invalid weight (should fail - weight <= 0)
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "weight": -5
+}
+
+###
+
+### Invalid weight (should fail - weight = 0)
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "weight": 0
+}
+
+###
+
+### Invalid date format (should fail)
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "15-01-2025",
+  "weight": 75.0
+}
+
+###
+
+### Missing weight (should fail)
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2025-01-15"
+}
+
+###
+
+###############################################
+### UPSERT WORKFLOW TEST
+###############################################
+
+### Step 1: Create new metric for 2025-02-01
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2025-02-01",
+  "weight": 80.0
+}
+
+### Expected: 201 Created with new metric
+
+###
+
+### Step 2: Update metric for same date 2025-02-01
+POST http://localhost:8080/metrics
+Authorization: Bearer {{tokenJulien}}
+Content-Type: application/json
+
+{
+  "date": "2025-02-01",
+  "weight": 79.5
+}
+
+### Expected: 200 OK with updated metric (weight changed from 80.0 to 79.5)
+
+###
+
+### Step 3: Verify the update
+GET http://localhost:8080/metrics/
+Authorization: Bearer {{tokenJulien}}
+
+### Expected: Should show 2025-02-01 with weight 79.5
+
+###
+
+###############################################
+### WEEKLY METRICS TEST
+###############################################
+
+### Get current week metrics (Monday to Sunday)
+### Returns all metrics logged during the current week
+GET http://localhost:8080/metrics/weekly
+Authorization: Bearer {{token}}
+
+### Expected: Array of metrics from this week's Monday to Sunday
+
+###
+
+### Create metrics for current week to test weekly endpoint
+### Monday
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2025-08-11",
+  "weight": 76.0
+}
+
+###
+
+### Wednesday
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2025-02-05",
+  "weight": 75.5
+}
+
+###
+
+### Friday
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2025-02-07",
+  "weight": 75.8
+}
+
+###
+
+### Verify weekly metrics includes all three entries
+GET http://localhost:8080/metrics/weekly
+Authorization: Bearer {{token}}
+
+### Expected: Should return 3 entries (Monday, Wednesday, Friday) ordered by date ASC
+
+###

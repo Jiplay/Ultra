@@ -23,7 +23,9 @@ func RegisterRoutes(mux *http.ServeMux, handler *Handler) {
 	}))
 
 	mux.HandleFunc("/metrics/latest", auth.JWTMiddleware(handler.GetLatest))
+	mux.HandleFunc("/metrics/weekly", auth.JWTMiddleware(handler.GetWeekly))
 	mux.HandleFunc("/metrics/trends", auth.JWTMiddleware(handler.GetTrends))
+	mux.HandleFunc("/metrics/date/", auth.JWTMiddleware(handler.GetByDate))
 
 	mux.HandleFunc("/metrics/", auth.JWTMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if strings.TrimPrefix(r.URL.Path, "/metrics/") == "" {
