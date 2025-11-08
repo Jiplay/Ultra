@@ -7,19 +7,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"ultra-bis/internal/user"
 )
 
 // Handler handles body metrics requests
 type Handler struct {
-	repo     *Repository
-	userRepo *user.Repository
+	repo *Repository
 }
 
 // NewHandler creates a new metrics handler
-func NewHandler(repo *Repository, userRepo *user.Repository) *Handler {
-	return &Handler{repo: repo, userRepo: userRepo}
+func NewHandler(repo *Repository) *Handler {
+	return &Handler{repo: repo}
 }
 
 // ErrorResponse represents an error response
@@ -58,6 +55,12 @@ func (h *Handler) CreateMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate weight
+	if req.Weight <= 0 {
+		writeError(w, http.StatusBadRequest, "Weight must be greater than 0")
+		return
+	}
+
 	// Parse date
 	var metricDate time.Time
 	if req.Date == "" {
@@ -71,28 +74,10 @@ func (h *Handler) CreateMetric(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Get user for height (needed for BMI calculation)
-	user, err := h.userRepo.GetByID(userID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Failed to get user")
-		return
-	}
-
-	// Calculate BMI
-	bmi := 0.0
-	if req.Weight > 0 && user.Height > 0 {
-		heightInMeters := user.Height / 100
-		bmi = req.Weight / (heightInMeters * heightInMeters)
-	}
-
 	metric := &BodyMetric{
-		UserID:            userID,
-		Date:              metricDate,
-		Weight:            req.Weight,
-		BodyFatPercent:    req.BodyFatPercent,
-		MuscleMassPercent: req.MuscleMassPercent,
-		BMI:               bmi,
-		Notes:             req.Notes,
+		UserID: userID,
+		Date:   metricDate,
+		Weight: req.Weight,
 	}
 
 	if err := h.repo.Create(metric); err != nil {
@@ -238,48 +223,20 @@ func calculateTrend(metrics []BodyMetric) TrendData {
 		return TrendData{}
 	}
 
-	var totalWeight, totalBodyFat, totalMuscleMass float64
-	count := 0
-
+	var totalWeight float64
 	for _, m := range metrics {
-		if m.Weight > 0 {
-			totalWeight += m.Weight
-			count++
-		}
-		if m.BodyFatPercent > 0 {
-			totalBodyFat += m.BodyFatPercent
-		}
-		if m.MuscleMassPercent > 0 {
-			totalMuscleMass += m.MuscleMassPercent
-		}
+		totalWeight += m.Weight
 	}
 
-	avgWeight := 0.0
-	if count > 0 {
-		avgWeight = totalWeight / float64(count)
-	}
-
-	avgBodyFat := 0.0
-	if count > 0 {
-		avgBodyFat = totalBodyFat / float64(count)
-	}
-
-	avgMuscleMass := 0.0
-	if count > 0 {
-		avgMuscleMass = totalMuscleMass / float64(count)
-	}
+	avgWeight := totalWeight / float64(len(metrics))
 
 	// Calculate change (first to last)
 	first := metrics[0]
 	last := metrics[len(metrics)-1]
 
 	return TrendData{
-		WeightChange:      roundToTwo(last.Weight - first.Weight),
-		BodyFatChange:     roundToTwo(last.BodyFatPercent - first.BodyFatPercent),
-		MuscleMassChange:  roundToTwo(last.MuscleMassPercent - first.MuscleMassPercent),
-		AverageWeight:     roundToTwo(avgWeight),
-		AverageBodyFat:    roundToTwo(avgBodyFat),
-		AverageMuscleMass: roundToTwo(avgMuscleMass),
+		WeightChange:  roundToTwo(last.Weight - first.Weight),
+		AverageWeight: roundToTwo(avgWeight),
 	}
 }
 

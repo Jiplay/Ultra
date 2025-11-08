@@ -5,7 +5,7 @@
 ### 1. AUTHENTICATION
 ###############################################
 
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2LCJlbWFpbCI6ImRpZXQtdGVzdEBleGFtcGxlLmNvbSIsImV4cCI6MTc2MjIwMjk2MSwiaWF0IjoxNzYyMTE2NTYxfQ.tPpQAtaHHwPN0r1UYovJzWQ8ZjLecc4upzlfTtmToVs
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6ImF0aGxldGVAZXhhbXBsZS5jb20iLCJleHAiOjE3NjI2ODQ0MTAsImlhdCI6MTc2MjU5ODAxMH0.TW-GSkE2P4R56lij-mCC1jPpEEtG4aiIRoGa4e3z8DU
 
 ### Register new user
 POST http://localhost:8080/auth/register
@@ -240,6 +240,18 @@ Authorization: Bearer {{token}}
 
 ###
 
+### Get weekly summary - Current week (Protected)
+GET http://localhost:8080/diary/weekly
+Authorization: Bearer {{token}}
+
+###
+
+### Get weekly summary - Specific week (Protected)
+GET http://localhost:8080/diary/weekly?start_date=2025-01-06
+Authorization: Bearer {{token}}
+
+###
+
 ### Update diary entry (Protected)
 PUT http://localhost:8080/diary/entries/1
 Authorization: Bearer {{token}}
@@ -260,34 +272,40 @@ Authorization: Bearer {{token}}
 ###
 
 ###############################################
-### 5. BODY METRICS
+### 5. BODY METRICS (Weight Tracking)
 ###############################################
 
-### Log body metrics (Protected)
+### Log body weight for today (Protected)
+POST http://localhost:8080/metrics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "weight": 75.2
+}
+
+###
+
+### Log body weight for specific date (Protected)
 POST http://localhost:8080/metrics
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "date": "2025-01-15",
-  "weight": 75.2,
-  "body_fat_percent": 15.5,
-  "muscle_mass_percent": 45.8,
-  "notes": "Morning weigh-in, fasted"
+  "weight": 75.2
 }
 
 ###
 
-### Log another metric entry (Protected)
+### Log another weight entry (Protected)
 POST http://localhost:8080/metrics
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "date": "2025-01-08",
-  "weight": 76.0,
-  "body_fat_percent": 16.2,
-  "muscle_mass_percent": 45.1
+  "weight": 76.0
 }
 
 ###

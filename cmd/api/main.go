@@ -51,7 +51,7 @@ func main() {
 	recipeHandler := recipe.NewHandler(recipeRepo, foodRepo)
 	goalHandler := goal.NewHandler(goalRepo, userRepo)
 	diaryHandler := diary.NewHandler(diaryRepo, foodRepo, goalRepo)
-	metricsHandler := metrics.NewHandler(metricsRepo, userRepo)
+	metricsHandler := metrics.NewHandler(metricsRepo)
 
 	// Set recipe repository in diary handler (to avoid circular dependency)
 	recipeAdapter := recipe.NewDiaryRecipeAdapter(recipeRepo)

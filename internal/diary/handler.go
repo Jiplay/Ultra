@@ -398,6 +398,132 @@ func calculateAdherence(actual, goal float64) float64 {
 	return (actual / goal) * 100
 }
 
+// GetWeeklySummary handles GET /diary/weekly?start_date=YYYY-MM-DD
+func (h *Handler) GetWeeklySummary(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	userID, ok := r.Context().Value("user_id").(uint)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Parse start_date query param or default to current week's Monday
+	startDateStr := r.URL.Query().Get("start_date")
+	var startDate time.Time
+	if startDateStr == "" {
+		// Default to current week's Monday
+		now := time.Now()
+		weekday := int(now.Weekday())
+		if weekday == 0 { // Sunday
+			weekday = 7
+		}
+		daysFromMonday := weekday - 1
+		startDate = now.AddDate(0, 0, -daysFromMonday)
+	} else {
+		var err error
+		startDate, err = time.Parse("2006-01-02", startDateStr)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
+			return
+		}
+	}
+
+	// Calculate end date (6 days after start)
+	endDate := startDate.AddDate(0, 0, 6)
+
+	// Get active goal once for all days
+	activeGoal, err := h.goalRepo.GetActive(userID)
+	var goalCalories, goalProtein, goalCarbs, goalFat, goalFiber float64
+	if err == nil {
+		goalCalories = activeGoal.Calories
+		goalProtein = activeGoal.Protein
+		goalCarbs = activeGoal.Carbs
+		goalFat = activeGoal.Fat
+		goalFiber = activeGoal.Fiber
+	}
+
+	// Build daily summaries for each day of the week
+	var dailySummaries []DailySummary
+	var totalCalories, totalProtein, totalCarbs, totalFat, totalFiber float64
+
+	for i := 0; i < 7; i++ {
+		currentDate := startDate.AddDate(0, 0, i)
+		dateStr := currentDate.Format("2006-01-02")
+
+		// Get entries for this day
+		entries, err := h.repo.GetByDate(userID, currentDate)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		// Calculate totals for this day
+		summary, err := h.repo.GetDailySummary(userID, currentDate)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		// Calculate adherence
+		adherence := AdherencePercent{
+			Calories: calculateAdherence(summary["calories"], goalCalories),
+			Protein:  calculateAdherence(summary["protein"], goalProtein),
+			Carbs:    calculateAdherence(summary["carbs"], goalCarbs),
+			Fat:      calculateAdherence(summary["fat"], goalFat),
+			Fiber:    calculateAdherence(summary["fiber"], goalFiber),
+		}
+
+		// Build daily summary
+		dailySummary := DailySummary{
+			Date:          dateStr,
+			TotalCalories: summary["calories"],
+			TotalProtein:  summary["protein"],
+			TotalCarbs:    summary["carbs"],
+			TotalFat:      summary["fat"],
+			TotalFiber:    summary["fiber"],
+			GoalCalories:  goalCalories,
+			GoalProtein:   goalProtein,
+			GoalCarbs:     goalCarbs,
+			GoalFat:       goalFat,
+			GoalFiber:     goalFiber,
+			Adherence:     adherence,
+			Entries:       entries,
+		}
+
+		dailySummaries = append(dailySummaries, dailySummary)
+
+		// Accumulate for weekly averages
+		totalCalories += summary["calories"]
+		totalProtein += summary["protein"]
+		totalCarbs += summary["carbs"]
+		totalFat += summary["fat"]
+		totalFiber += summary["fiber"]
+	}
+
+	// Calculate weekly averages
+	weeklySummary := WeeklySummary{
+		StartDate:       startDate.Format("2006-01-02"),
+		EndDate:         endDate.Format("2006-01-02"),
+		DailySummaries:  dailySummaries,
+		AverageCalories: roundToTwo(totalCalories / 7),
+		AverageProtein:  roundToTwo(totalProtein / 7),
+		AverageCarbs:    roundToTwo(totalCarbs / 7),
+		AverageFat:      roundToTwo(totalFat / 7),
+		AverageFiber:    roundToTwo(totalFiber / 7),
+	}
+
+	writeJSON(w, http.StatusOK, weeklySummary)
+}
+
+// roundToTwo rounds a float to 2 decimal places
+func roundToTwo(val float64) float64 {
+	return float64(int(val*100)) / 100
+}
+
 // extractID extracts the ID from the URL path
 func extractID(path, prefix string) (int, error) {
 	idStr := strings.TrimPrefix(path, prefix)

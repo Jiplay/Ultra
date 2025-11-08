@@ -39,4 +39,5 @@ func RegisterRoutes(mux *http.ServeMux, handler *Handler) {
 	}))
 
 	mux.HandleFunc("/diary/summary/", auth.JWTMiddleware(handler.GetDailySummary))
+	mux.HandleFunc("/diary/weekly", auth.JWTMiddleware(handler.GetWeeklySummary))
 }
