@@ -33,6 +33,11 @@ func main() {
 		log.Fatal("Failed to run custom ingredients migration:", err)
 	}
 
+	// Run custom migration to remove unique constraint from body_metrics
+	if err := database.MigrateRemoveMetricsConstraint(db); err != nil {
+		log.Fatal("Failed to remove metrics constraint:", err)
+	}
+
 	// Auto-migrate database schema (like Sequelize sync)
 	log.Println("Running database migrations...")
 	if err := db.AutoMigrate(

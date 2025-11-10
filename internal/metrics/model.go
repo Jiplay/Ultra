@@ -12,8 +12,8 @@ type BodyMetric struct {
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
-	UserID    uint           `json:"user_id" gorm:"not null;index:idx_user_date;uniqueIndex:idx_user_date_unique"`
-	Date      time.Time      `json:"date" gorm:"not null;index:idx_user_date;uniqueIndex:idx_user_date_unique"`
+	UserID    uint           `json:"user_id" gorm:"not null;index:idx_user_date"`
+	Date      time.Time      `json:"date" gorm:"not null;index:idx_user_date"`
 	Weight    float64        `json:"weight" gorm:"type:decimal(5,2);not null"` // in kg
 }
 
