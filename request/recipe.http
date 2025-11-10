@@ -5,7 +5,7 @@
 ### 0. SETUP - Authentication & Foods
 ###############################################
 
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJlbWFpbCI6Imp1anVnYXJzaWFAZ21haWwuY29tIiwiZXhwIjoxNzYyMTU5NDM0LCJpYXQiOjE3NjIwNzMwMzR9.gWtzkHEpPD4eb-C-shb9YTmOWuiWuR8SvjhOOjA4vR8
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJlbWFpbCI6Imp1anVnYXJzaWFAZ21haWwuY29tIiwiZXhwIjoxNzY1MzA1MjQ2LCJpYXQiOjE3NjI3MTMyNDZ9.vSC8_W4zTBJdijnS7IiOUccvk-22JYF8Dqkxd0DI6T4
 
 ### Register new user (if needed)
 POST http://localhost:8080/auth/register
@@ -32,6 +32,7 @@ Content-Type: application/json
 
 ### Create test food 1 - Chicken Breast
 POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -48,6 +49,7 @@ Content-Type: application/json
 
 ### Create test food 2 - Brown Rice
 POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -64,6 +66,7 @@ Content-Type: application/json
 
 ### Create test food 3 - Olive Oil
 POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -80,6 +83,7 @@ Content-Type: application/json
 
 ### Create test food 4 - Broccoli
 POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -96,6 +100,7 @@ Content-Type: application/json
 
 ### Create test food 5 - Salmon
 POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -112,7 +117,7 @@ Content-Type: application/json
 
 ### Get all foods (verify they exist)
 GET http://localhost:8080/foods
-
+Authorization: Bearer {{token}}
 ###
 
 ###############################################
@@ -120,29 +125,21 @@ GET http://localhost:8080/foods
 ###############################################
 
 ### Create Recipe 1 - Chicken & Rice Bowl (Protected)
+### Total: 200g chicken + 150g rice + 15g oil + 100g broccoli = 465g total
 POST http://localhost:8080/recipes
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "name": "Chicken & Rice Bowl",
-  "serving_size": 1,
   "ingredients": [
     {
-      "food_id": 1,
-      "quantity": 2
+      "food_id": 26,
+      "quantity_grams": 156
     },
     {
-      "food_id": 2,
-      "quantity": 1.5
-    },
-    {
-      "food_id": 3,
-      "quantity": 1
-    },
-    {
-      "food_id": 4,
-      "quantity": 1
+      "food_id": 27,
+      "quantity_grams": 122
     }
   ]
 }
@@ -150,29 +147,29 @@ Content-Type: application/json
 ###
 
 ### Create Recipe 2 - Simple Salmon Dinner (Protected)
+### Total: 150g salmon + 100g rice + 200g broccoli + 7.5g oil = 457.5g total
 POST http://localhost:8080/recipes
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "name": "Simple Salmon Dinner",
-  "serving_size": 1,
   "ingredients": [
     {
       "food_id": 5,
-      "quantity": 1.5
+      "quantity_grams": 150
     },
     {
       "food_id": 2,
-      "quantity": 1
+      "quantity_grams": 100
     },
     {
       "food_id": 4,
-      "quantity": 2
+      "quantity_grams": 200
     },
     {
       "food_id": 3,
-      "quantity": 0.5
+      "quantity_grams": 7.5
     }
   ]
 }
@@ -180,21 +177,21 @@ Content-Type: application/json
 ###
 
 ### Create Recipe 4 - Minimal Ingredients (Protected)
+### Total: 100g chicken + 200g broccoli = 300g total
 POST http://localhost:8080/recipes
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "name": "Chicken & Broccoli",
-  "serving_size": 1,
   "ingredients": [
     {
       "food_id": 1,
-      "quantity": 1
+      "quantity_grams": 100
     },
     {
       "food_id": 4,
-      "quantity": 2
+      "quantity_grams": 200
     }
   ]
 }
@@ -245,14 +242,13 @@ Authorization: Bearer {{token}}
 ### 3. UPDATE RECIPES
 ###############################################
 
-### Update recipe name and serving size (Protected)
+### Update recipe name (Protected)
 PUT http://localhost:8080/recipes/1
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Chicken & Rice Bowl - Updated",
-  "serving_size": 1.5
+  "name": "Chicken & Rice Bowl - Updated"
 }
 
 ###
@@ -284,48 +280,52 @@ Content-Type: application/json
 ###############################################
 
 ### Add new ingredient to recipe (Protected)
+### Adding 50g of salmon
 POST http://localhost:8080/recipes/1/ingredients
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "food_id": 5,
-  "quantity": 0.5
+  "quantity_grams": 50
 }
 
 ###
 
 ### Add another ingredient to recipe 2
+### Adding 100g of chicken
 POST http://localhost:8080/recipes/2/ingredients
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "food_id": 1,
-  "quantity": 1
+  "quantity_grams": 100
 }
 
 ###
 
 ### Update ingredient quantity (Protected)
 ### Note: Replace {ingredient_id} with actual ID from recipe details
+### Updating to 300g
 PUT http://localhost:8080/recipes/1/ingredients/1
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "quantity": 3
+  "quantity_grams": 300
 }
 
 ###
 
 ### Update another ingredient quantity
+### Updating to 250g
 PUT http://localhost:8080/recipes/1/ingredients/2
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "quantity": 2.5
+  "quantity_grams": 250
 }
 
 ###
@@ -347,6 +347,7 @@ Authorization: Bearer DIFFERENT_USER_TOKEN
 ###############################################
 
 ### Log recipe as breakfast (Protected)
+### Eating 465g (whole recipe)
 POST http://localhost:8080/diary/entries
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -355,13 +356,14 @@ Content-Type: application/json
   "recipe_id": 1,
   "date": "2025-01-15",
   "meal_type": "breakfast",
-  "serving_size": 1,
+  "quantity_grams": 465,
   "notes": "Delicious recipe meal"
 }
 
 ###
 
-### Log recipe as lunch with custom serving size (Protected)
+### Log recipe as lunch with custom quantity (Protected)
+### Eating 686.25g (1.5x the recipe)
 POST http://localhost:8080/diary/entries
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -370,13 +372,14 @@ Content-Type: application/json
   "recipe_id": 2,
   "date": "2025-01-15",
   "meal_type": "lunch",
-  "serving_size": 1.5,
+  "quantity_grams": 686.25,
   "notes": "Extra hungry today"
 }
 
 ###
 
 ### Log recipe as dinner (Protected)
+### Eating 600g (2x the recipe)
 POST http://localhost:8080/diary/entries
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -385,7 +388,7 @@ Content-Type: application/json
   "recipe_id": 3,
   "date": "2025-01-15",
   "meal_type": "dinner",
-  "serving_size": 2
+  "quantity_grams": 600
 }
 
 ###
@@ -451,14 +454,13 @@ Content-Type: application/json
 
 ###
 
-### Create recipe with no ingredients (should fail)
+### Create recipe with no ingredients (should succeed but empty)
 POST http://localhost:8080/recipes
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "name": "Empty Recipe",
-  "serving_size": 1,
   "ingredients": []
 }
 
@@ -471,11 +473,10 @@ Content-Type: application/json
 
 {
   "name": "Invalid Recipe",
-  "serving_size": 1,
   "ingredients": [
     {
       "food_id": 9999,
-      "quantity": 1
+      "quantity_grams": 100
     }
   ]
 }
@@ -489,7 +490,7 @@ Content-Type: application/json
 
 {
   "food_id": 9999,
-  "quantity": 1
+  "quantity_grams": 100
 }
 
 ###
@@ -500,7 +501,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "quantity": 0
+  "quantity_grams": 0
 }
 
 ###
@@ -511,7 +512,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "quantity": -5
+  "quantity_grams": -50
 }
 
 ###

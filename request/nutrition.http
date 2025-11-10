@@ -5,14 +5,14 @@
 ### 1. AUTHENTICATION
 ###############################################
 
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6ImF0aGxldGVAZXhhbXBsZS5jb20iLCJleHAiOjE3NjI2ODQ0MTAsImlhdCI6MTc2MjU5ODAxMH0.TW-GSkE2P4R56lij-mCC1jPpEEtG4aiIRoGa4e3z8DU
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo4LCJlbWFpbCI6ImF0aGxldGUyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzY1MzY5NDg4LCJpYXQiOjE3NjI3Nzc0ODh9.NBvVDH0hrJRPp1Ea7XXoMNVtPGaEDlCbGkOfpLgECms
 
 ### Register new user
 POST http://localhost:8080/auth/register
 Content-Type: application/json
 
 {
-  "email": "athlete@example.com",
+  "email": "athlete2@example.com",
   "password": "password123",
   "name": "John Athlete"
 }
@@ -58,6 +58,7 @@ Content-Type: application/json
 
 ### Create food - Chicken Breast
 POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -74,6 +75,7 @@ Content-Type: application/json
 
 ### Create food - Brown Rice
 POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -90,6 +92,7 @@ Content-Type: application/json
 
 ### Create food - Avocado
 POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -106,7 +109,7 @@ Content-Type: application/json
 
 ### Get all foods
 GET http://localhost:8080/foods
-
+Authorization: Bearer {{token}}
 ###
 
 ### Get food by ID
@@ -179,21 +182,23 @@ Content-Type: application/json
 ###############################################
 
 ### Log breakfast - Chicken with Brown Rice (Protected)
+### 150g of chicken (nutrition per 100g, so 1.5x multiplier)
 POST http://localhost:8080/diary/entries
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "food_id": 1,
+  "food_id": 26,
   "date": "2025-01-15",
   "meal_type": "breakfast",
-  "serving_size": 1.5,
+  "quantity_grams": 150,
   "notes": "Post-workout meal"
 }
 
 ###
 
 ### Log lunch - Brown Rice (Protected)
+### 200g of brown rice (nutrition per 100g, so 2x multiplier)
 POST http://localhost:8080/diary/entries
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -202,13 +207,14 @@ Content-Type: application/json
   "food_id": 2,
   "date": "2025-01-15",
   "meal_type": "lunch",
-  "serving_size": 2,
+  "quantity_grams": 200,
   "notes": "Good energy"
 }
 
 ###
 
 ### Log snack - Avocado (Protected)
+### 50g of avocado (nutrition per 100g, so 0.5x multiplier)
 POST http://localhost:8080/diary/entries
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -217,7 +223,7 @@ Content-Type: application/json
   "food_id": 3,
   "date": "2025-01-15",
   "meal_type": "snack",
-  "serving_size": 0.5
+  "quantity_grams": 50
 }
 
 ###
@@ -253,12 +259,13 @@ Authorization: Bearer {{token}}
 ###
 
 ### Update diary entry (Protected)
+### Updating to 200g
 PUT http://localhost:8080/diary/entries/1
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "serving_size": 2,
+  "quantity_grams": 200,
   "meal_type": "breakfast",
   "notes": "Increased portion"
 }
@@ -267,6 +274,91 @@ Content-Type: application/json
 
 ### Delete diary entry (Protected)
 DELETE http://localhost:8080/diary/entries/1
+Authorization: Bearer {{token}}
+
+###
+
+###############################################
+### 4.5. RECIPE DIARY ENTRIES WITH CUSTOM INGREDIENTS
+###############################################
+
+### Log recipe with proportional scaling (backward compatible)
+### Recipe ID 1 with 175g consumed (scales all ingredients proportionally)
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 1,
+  "date": "2025-01-16",
+  "meal_type": "lunch",
+  "quantity_grams": 175,
+  "notes": "Half the recipe"
+}
+
+###
+
+### Log recipe with custom ingredient quantities
+### Recipe ID 1 with custom quantities for each ingredient
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipe_id": 1,
+  "date": "2025-01-16",
+  "meal_type": "dinner",
+  "custom_ingredients": [
+    {
+      "food_id": 26,
+      "quantity_grams": 150
+    },
+    {
+      "food_id": 27,
+      "quantity_grams": 80
+    }
+  ],
+  "notes": "Custom quantities - more chicken, less rice"
+}
+
+###
+
+### Update recipe entry with new custom ingredient quantities
+### Entry ID from previous creation
+PUT http://localhost:8080/diary/entries/5
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "custom_ingredients": [
+    {
+      "food_id": 1,
+      "quantity_grams": 200
+    },
+    {
+      "food_id": 2,
+      "quantity_grams": 100
+    }
+  ],
+  "notes": "Increased portions"
+}
+
+###
+
+### Update recipe entry with proportional scaling (backward compatible)
+PUT http://localhost:8080/diary/entries/4
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantity_grams": 350,
+  "notes": "Changed to full recipe"
+}
+
+###
+
+### Get diary entries with custom ingredients breakdown
+GET http://localhost:8080/diary/entries?date=2025-01-16
 Authorization: Bearer {{token}}
 
 ###

@@ -20,9 +20,8 @@ func (a *DiaryRecipeAdapter) GetByID(id int) (diary.Recipe, error) {
 	}
 
 	return diary.Recipe{
-		ID:          recipe.ID,
-		Name:        recipe.Name,
-		ServingSize: recipe.ServingSize,
+		ID:   recipe.ID,
+		Name: recipe.Name,
 	}, nil
 }
 
@@ -36,8 +35,8 @@ func (a *DiaryRecipeAdapter) GetIngredients(recipeID int) ([]diary.RecipeIngredi
 	ingredients := make([]diary.RecipeIngredient, len(recipe.Ingredients))
 	for i, ing := range recipe.Ingredients {
 		ingredients[i] = diary.RecipeIngredient{
-			FoodID:   ing.FoodID,
-			Quantity: ing.Quantity,
+			FoodID:        ing.FoodID,
+			QuantityGrams: ing.QuantityGrams,
 		}
 	}
 

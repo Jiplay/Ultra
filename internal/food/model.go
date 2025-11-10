@@ -7,6 +7,7 @@ import (
 )
 
 // Food represents a food item with nutritional information
+// All nutritional values (Calories, Protein, Carbs, Fat, Fiber) are per 100 grams
 type Food struct {
 	ID          uint           `json:"id" gorm:"primarykey"`
 	CreatedAt   time.Time      `json:"created_at"`

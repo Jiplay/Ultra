@@ -22,6 +22,16 @@ func main() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
+	// Run custom migration to convert to gram-based system
+	if err := database.MigrateToGrams(db); err != nil {
+		log.Fatal("Failed to run gram migration:", err)
+	}
+
+	// Run custom migration to populate custom ingredients
+	if err := database.MigrateCustomIngredients(db); err != nil {
+		log.Fatal("Failed to run custom ingredients migration:", err)
+	}
+
 	// Auto-migrate database schema (like Sequelize sync)
 	log.Println("Running database migrations...")
 	if err := db.AutoMigrate(

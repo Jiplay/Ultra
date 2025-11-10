@@ -65,15 +65,10 @@ func (h *Handler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.ServingSize <= 0 {
-		req.ServingSize = 1
-	}
-
 	// Create recipe (always belongs to the authenticated user)
 	recipe := &Recipe{
-		Name:        req.Name,
-		ServingSize: req.ServingSize,
-		UserID:      &userID,
+		Name:   req.Name,
+		UserID: &userID,
 	}
 
 	if err := h.repo.Create(recipe); err != nil {
@@ -83,7 +78,7 @@ func (h *Handler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 
 	// Add ingredients if provided
 	for _, ing := range req.Ingredients {
-		if ing.Quantity <= 0 {
+		if ing.QuantityGrams <= 0 {
 			continue
 		}
 
@@ -94,9 +89,9 @@ func (h *Handler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 		}
 
 		ingredient := &RecipeIngredient{
-			RecipeID: recipe.ID,
-			FoodID:   ing.FoodID,
-			Quantity: ing.Quantity,
+			RecipeID:      recipe.ID,
+			FoodID:        ing.FoodID,
+			QuantityGrams: ing.QuantityGrams,
 		}
 
 		if err := h.repo.AddIngredient(ingredient); err != nil {
@@ -226,9 +221,6 @@ func (h *Handler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 	if req.Name != "" {
 		recipe.Name = req.Name
 	}
-	if req.ServingSize > 0 {
-		recipe.ServingSize = req.ServingSize
-	}
 
 	if err := h.repo.Update(recipe); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -329,8 +321,8 @@ func (h *Handler) AddIngredient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Quantity <= 0 {
-		writeError(w, http.StatusBadRequest, "Quantity must be greater than 0")
+	if req.QuantityGrams <= 0 {
+		writeError(w, http.StatusBadRequest, "Quantity in grams must be greater than 0")
 		return
 	}
 
@@ -341,9 +333,9 @@ func (h *Handler) AddIngredient(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ingredient := &RecipeIngredient{
-		RecipeID: uint(recipeID),
-		FoodID:   req.FoodID,
-		Quantity: req.Quantity,
+		RecipeID:      uint(recipeID),
+		FoodID:        req.FoodID,
+		QuantityGrams: req.QuantityGrams,
 	}
 
 	if err := h.repo.AddIngredient(ingredient); err != nil {
@@ -417,12 +409,12 @@ func (h *Handler) UpdateIngredient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Quantity <= 0 {
-		writeError(w, http.StatusBadRequest, "Quantity must be greater than 0")
+	if req.QuantityGrams <= 0 {
+		writeError(w, http.StatusBadRequest, "Quantity in grams must be greater than 0")
 		return
 	}
 
-	ingredient.Quantity = req.Quantity
+	ingredient.QuantityGrams = req.QuantityGrams
 
 	if err := h.repo.UpdateIngredient(ingredient); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())

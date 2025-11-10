@@ -160,16 +160,21 @@ Each domain follows the **Repository pattern**:
 GORM auto-migrates the following models on startup:
 
 - **users** - User accounts with profile data (age, gender, height, activity level, goal type)
-- **foods** - Food database with nutritional information (calories, protein, carbs, fat, fiber)
+- **foods** - Food database with nutritional information per 100g (calories, protein, carbs, fat, fiber)
+- **recipes** - Recipe combinations with ingredients (each ingredient has quantity in grams)
+- **recipe_ingredients** - Food items within recipes with gram-based quantities
 - **nutrition_goals** - User nutrition targets with start/end dates, active status
-- **diary_entries** - Daily meal logs (references foods, calculated nutrition per serving)
+- **diary_entries** - Daily meal logs (references foods/recipes, calculated nutrition based on grams consumed)
 - **body_metrics** - Weight and body composition tracking (includes BMI calculation)
 
 **Important Relationships:**
 - Users have many NutritionGoals (1:N)
 - Users have many DiaryEntries (1:N)
 - Users have many BodyMetrics (1:N)
-- DiaryEntries reference Foods (N:1)
+- Users have many Recipes (1:N)
+- Recipes have many RecipeIngredients (1:N)
+- DiaryEntries reference Foods OR Recipes (N:1)
+- RecipeIngredients reference Foods (N:1)
 - Only one NutritionGoal per user can be active (`is_active=true`) at a time
 
 ### Key Features
@@ -280,7 +285,8 @@ A comprehensive frontend specification is available in `FRONTEND_SPEC.md`. Key p
 - All protected endpoints require `Authorization: Bearer <token>` header
 - Dates should be formatted as `YYYY-MM-DD` (e.g., "2025-01-15")
 - API returns timestamps in RFC3339 format
-- Serving sizes are multipliers (1.0 = 1 serving, 1.5 = 1.5 servings)
+- **All quantities are in grams**: Foods, recipes, and diary entries use gram-based measurements
+- **All food nutrition is per 100g**: Nutritional values represent nutrition per 100 grams
 - Meal types: `breakfast`, `lunch`, `dinner`, `snack`
 
 ## Important Constraints
@@ -289,7 +295,26 @@ A comprehensive frontend specification is available in `FRONTEND_SPEC.md`. Key p
 When creating a new nutrition goal for a user, the system automatically deactivates any existing active goals. Only one goal can be active per user at a time (enforced in `internal/goal/repository.go`).
 
 ### Nutrition Calculations
-Diary entries automatically calculate nutrition values based on food data multiplied by serving size. These are stored denormalized for historical accuracy (if food data changes later, past diary entries remain unchanged).
+
+**Food-Based System:**
+- All food nutritional values (calories, protein, carbs, fat, fiber) are stored **per 100 grams**
+- When logging food to diary: `nutrition = food_nutrition_per_100g * (quantity_grams / 100.0)`
+- Example: 150g of chicken (165 cal/100g) = 165 * (150/100) = 247.5 calories
+
+**Recipe System:**
+- Recipe ingredients specify quantity in grams (e.g., 200g chicken, 150g rice)
+- Total recipe nutrition = sum of all ingredient nutrition calculated as above
+- Recipe responses include:
+  - `total_weight`: Sum of all ingredient grams
+  - `total_*`: Total nutrition for entire recipe
+  - `*_per_100g`: Normalized nutrition per 100g of recipe
+
+**Diary Entries:**
+- For foods: User specifies grams consumed directly
+- For recipes: User specifies grams of recipe consumed
+  - System calculates portion: `portion = grams_consumed / total_recipe_grams`
+  - Entry nutrition = `total_recipe_nutrition * portion`
+- Nutrition values are cached in diary entries for historical accuracy (if food data changes later, past entries remain unchanged)
 
 ### BMI Calculation
 BMI is auto-calculated in body metrics based on weight (kg) and user height (cm) from their profile: `BMI = weight / (height/100)²`
@@ -297,17 +322,53 @@ BMI is auto-calculated in body metrics based on weight (kg) and user height (cm)
 ## Common Development Workflows
 
 ### Adding a New Food Item via API
+**Note:** All nutritional values are per 100g
 ```bash
 curl -X POST http://localhost:8080/foods \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Salmon",
-    "description": "Atlantic salmon, baked",
+    "description": "Atlantic salmon, baked, per 100g",
     "calories": 206,
     "protein": 22,
     "carbs": 0,
     "fat": 13,
     "fiber": 0
+  }'
+```
+
+### Creating a Recipe via API
+```bash
+curl -X POST http://localhost:8080/recipes \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Chicken & Rice Bowl",
+    "ingredients": [
+      {
+        "food_id": 1,
+        "quantity_grams": 200
+      },
+      {
+        "food_id": 2,
+        "quantity_grams": 150
+      }
+    ]
+  }'
+```
+
+### Logging Food to Diary
+**Specify quantity in grams:**
+```bash
+curl -X POST http://localhost:8080/diary/entries \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "food_id": 1,
+    "date": "2025-01-15",
+    "meal_type": "breakfast",
+    "quantity_grams": 150,
+    "notes": "Post-workout meal"
   }'
 ```
 

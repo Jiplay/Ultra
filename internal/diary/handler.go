@@ -2,6 +2,7 @@ package diary
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,15 +28,14 @@ type RecipeRepository interface {
 
 // Recipe represents a recipe with basic info
 type Recipe struct {
-	ID          uint
-	Name        string
-	ServingSize float64
+	ID   uint
+	Name string
 }
 
 // RecipeIngredient represents an ingredient in a recipe
 type RecipeIngredient struct {
-	FoodID   uint
-	Quantity float64
+	FoodID        uint
+	QuantityGrams float64
 }
 
 // NewHandler creates a new diary handler
@@ -95,8 +95,16 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.ServingSize <= 0 {
-		req.ServingSize = 1
+	// For food entries, quantity_grams is required
+	// For recipe entries, either quantity_grams or custom_ingredients is required
+	if req.FoodID != nil && req.QuantityGrams <= 0 {
+		writeError(w, http.StatusBadRequest, "Quantity in grams must be greater than 0 for food entries")
+		return
+	}
+
+	if req.RecipeID != nil && req.QuantityGrams <= 0 && len(req.CustomIngredients) == 0 {
+		writeError(w, http.StatusBadRequest, "Either quantity_grams or custom_ingredients is required for recipe entries")
+		return
 	}
 
 	// Parse date
@@ -114,16 +122,16 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 
 	// Create entry
 	entry := &DiaryEntry{
-		UserID:      userID,
-		FoodID:      req.FoodID,
-		RecipeID:    req.RecipeID,
-		Date:        entryDate,
-		MealType:    req.MealType,
-		ServingSize: req.ServingSize,
-		Notes:       req.Notes,
+		UserID:        userID,
+		FoodID:        req.FoodID,
+		RecipeID:      req.RecipeID,
+		Date:          entryDate,
+		MealType:      req.MealType,
+		QuantityGrams: req.QuantityGrams,
+		Notes:         req.Notes,
 	}
 
-	// Calculate nutrition if food_id is provided
+	// Calculate nutrition if food_id is provided (food nutrition is per 100g)
 	if req.FoodID != nil {
 		foodItem, err := h.foodRepo.GetByID(int(*req.FoodID))
 		if err != nil {
@@ -131,11 +139,12 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		entry.Calories = foodItem.Calories * req.ServingSize
-		entry.Protein = foodItem.Protein * req.ServingSize
-		entry.Carbs = foodItem.Carbs * req.ServingSize
-		entry.Fat = foodItem.Fat * req.ServingSize
-		entry.Fiber = foodItem.Fiber * req.ServingSize
+		multiplier := req.QuantityGrams / 100.0
+		entry.Calories = foodItem.Calories * multiplier
+		entry.Protein = foodItem.Protein * multiplier
+		entry.Carbs = foodItem.Carbs * multiplier
+		entry.Fat = foodItem.Fat * multiplier
+		entry.Fiber = foodItem.Fiber * multiplier
 	}
 
 	// Calculate nutrition if recipe_id is provided
@@ -151,34 +160,43 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ingredients, err := h.recipeRepo.GetIngredients(int(*req.RecipeID))
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, "Failed to load recipe ingredients")
-			return
-		}
+		var customIngredients CustomIngredients
+		var totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, totalWeight float64
 
-		// Calculate total nutrition from all ingredients
-		var totalCalories, totalProtein, totalCarbs, totalFat, totalFiber float64
-
-		for _, ingredient := range ingredients {
-			foodItem, err := h.foodRepo.GetByID(int(ingredient.FoodID))
-			if err != nil {
-				continue // Skip if food not found
+		// Use custom ingredients if provided, otherwise use proportional scaling
+		if len(req.CustomIngredients) > 0 {
+			// Validate custom ingredients belong to recipe
+			if err := h.validateCustomIngredients(int(*req.RecipeID), req.CustomIngredients); err != nil {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
 			}
 
-			totalCalories += foodItem.Calories * ingredient.Quantity
-			totalProtein += foodItem.Protein * ingredient.Quantity
-			totalCarbs += foodItem.Carbs * ingredient.Quantity
-			totalFat += foodItem.Fat * ingredient.Quantity
-			totalFiber += foodItem.Fiber * ingredient.Quantity
+			// Calculate nutrition with custom quantities
+			var calcErr error
+			customIngredients, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, totalWeight, calcErr = h.calculateCustomIngredientsNutrition(req.CustomIngredients)
+			if calcErr != nil {
+				writeError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
+				return
+			}
+		} else {
+			// Convert proportional quantity to custom ingredients (backward compatibility)
+			var calcErr error
+			customIngredients, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, calcErr = h.convertProportionalToCustomIngredients(int(*req.RecipeID), req.QuantityGrams)
+			if calcErr != nil {
+				writeError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
+				return
+			}
+			totalWeight = req.QuantityGrams
 		}
 
-		// Apply serving size multiplier
-		entry.Calories = totalCalories * req.ServingSize
-		entry.Protein = totalProtein * req.ServingSize
-		entry.Carbs = totalCarbs * req.ServingSize
-		entry.Fat = totalFat * req.ServingSize
-		entry.Fiber = totalFiber * req.ServingSize
+		// Set nutrition values
+		entry.Calories = roundToTwo(totalCalories)
+		entry.Protein = roundToTwo(totalProtein)
+		entry.Carbs = roundToTwo(totalCarbs)
+		entry.Fat = roundToTwo(totalFat)
+		entry.Fiber = roundToTwo(totalFiber)
+		entry.QuantityGrams = roundToTwo(totalWeight)
+		entry.CustomIngredients = customIngredients
 	}
 
 	if err := h.repo.Create(entry); err != nil {
@@ -333,18 +351,57 @@ func (h *Handler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update fields
-	if req.ServingSize > 0 {
-		// Recalculate nutrition based on new serving size
-		if entry.FoodID != nil {
+	if entry.FoodID != nil {
+		// Food entry - only update if quantity_grams is provided
+		if req.QuantityGrams > 0 {
 			foodItem, err := h.foodRepo.GetByID(int(*entry.FoodID))
 			if err == nil {
-				entry.ServingSize = req.ServingSize
-				entry.Calories = foodItem.Calories * req.ServingSize
-				entry.Protein = foodItem.Protein * req.ServingSize
-				entry.Carbs = foodItem.Carbs * req.ServingSize
-				entry.Fat = foodItem.Fat * req.ServingSize
-				entry.Fiber = foodItem.Fiber * req.ServingSize
+				entry.QuantityGrams = req.QuantityGrams
+				multiplier := req.QuantityGrams / 100.0
+				entry.Calories = roundToTwo(foodItem.Calories * multiplier)
+				entry.Protein = roundToTwo(foodItem.Protein * multiplier)
+				entry.Carbs = roundToTwo(foodItem.Carbs * multiplier)
+				entry.Fat = roundToTwo(foodItem.Fat * multiplier)
+				entry.Fiber = roundToTwo(foodItem.Fiber * multiplier)
 			}
+		}
+	} else if entry.RecipeID != nil {
+		// Recipe entry - support both custom ingredients and proportional scaling
+		if len(req.CustomIngredients) > 0 {
+			// Custom ingredients provided - validate and recalculate
+			if err := h.validateCustomIngredients(int(*entry.RecipeID), req.CustomIngredients); err != nil {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
+			}
+
+			customIngredients, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, totalWeight, calcErr := h.calculateCustomIngredientsNutrition(req.CustomIngredients)
+			if calcErr != nil {
+				writeError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
+				return
+			}
+
+			entry.Calories = roundToTwo(totalCalories)
+			entry.Protein = roundToTwo(totalProtein)
+			entry.Carbs = roundToTwo(totalCarbs)
+			entry.Fat = roundToTwo(totalFat)
+			entry.Fiber = roundToTwo(totalFiber)
+			entry.QuantityGrams = roundToTwo(totalWeight)
+			entry.CustomIngredients = customIngredients
+		} else if req.QuantityGrams > 0 {
+			// Proportional scaling - convert to custom ingredients
+			customIngredients, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, calcErr := h.convertProportionalToCustomIngredients(int(*entry.RecipeID), req.QuantityGrams)
+			if calcErr != nil {
+				writeError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
+				return
+			}
+
+			entry.Calories = roundToTwo(totalCalories)
+			entry.Protein = roundToTwo(totalProtein)
+			entry.Carbs = roundToTwo(totalCarbs)
+			entry.Fat = roundToTwo(totalFat)
+			entry.Fiber = roundToTwo(totalFiber)
+			entry.QuantityGrams = req.QuantityGrams
+			entry.CustomIngredients = customIngredients
 		}
 	}
 
@@ -528,4 +585,115 @@ func roundToTwo(val float64) float64 {
 func extractID(path, prefix string) (int, error) {
 	idStr := strings.TrimPrefix(path, prefix)
 	return strconv.Atoi(idStr)
+}
+
+// validateCustomIngredients validates that custom ingredients belong to the recipe
+func (h *Handler) validateCustomIngredients(recipeID int, customIngredients []CustomIngredientRequest) error {
+	// Get recipe ingredients
+	recipeIngredients, err := h.recipeRepo.GetIngredients(recipeID)
+	if err != nil {
+		return err
+	}
+
+	// Build a map of valid food IDs in the recipe
+	validFoodIDs := make(map[uint]bool)
+	for _, ingredient := range recipeIngredients {
+		validFoodIDs[ingredient.FoodID] = true
+	}
+
+	// Check if all custom ingredients are in the recipe
+	for _, customIng := range customIngredients {
+		if !validFoodIDs[customIng.FoodID] {
+			return errors.New("custom ingredient food_id does not belong to this recipe")
+		}
+		if customIng.QuantityGrams <= 0 {
+			return errors.New("custom ingredient quantity must be greater than 0")
+		}
+	}
+
+	// Check if all recipe ingredients are provided (strict mode)
+	if len(customIngredients) != len(recipeIngredients) {
+		return errors.New("all recipe ingredients must be provided with custom quantities")
+	}
+
+	return nil
+}
+
+// calculateCustomIngredientsNutrition calculates nutrition for custom ingredients
+func (h *Handler) calculateCustomIngredientsNutrition(customIngredients []CustomIngredientRequest) (CustomIngredients, float64, float64, float64, float64, float64, float64, error) {
+	var result CustomIngredients
+	var totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, totalWeight float64
+
+	for _, customIng := range customIngredients {
+		// Fetch food item
+		foodItem, err := h.foodRepo.GetByID(int(customIng.FoodID))
+		if err != nil {
+			return nil, 0, 0, 0, 0, 0, 0, err
+		}
+
+		// Calculate nutrition (food nutrition is per 100g)
+		multiplier := customIng.QuantityGrams / 100.0
+		ingredientCalories := foodItem.Calories * multiplier
+		ingredientProtein := foodItem.Protein * multiplier
+		ingredientCarbs := foodItem.Carbs * multiplier
+		ingredientFat := foodItem.Fat * multiplier
+		ingredientFiber := foodItem.Fiber * multiplier
+
+		// Add to result
+		result = append(result, CustomIngredient{
+			FoodID:        customIng.FoodID,
+			FoodName:      foodItem.Name,
+			QuantityGrams: customIng.QuantityGrams,
+			Calories:      roundToTwo(ingredientCalories),
+			Protein:       roundToTwo(ingredientProtein),
+			Carbs:         roundToTwo(ingredientCarbs),
+			Fat:           roundToTwo(ingredientFat),
+			Fiber:         roundToTwo(ingredientFiber),
+		})
+
+		// Accumulate totals
+		totalCalories += ingredientCalories
+		totalProtein += ingredientProtein
+		totalCarbs += ingredientCarbs
+		totalFat += ingredientFat
+		totalFiber += ingredientFiber
+		totalWeight += customIng.QuantityGrams
+	}
+
+	return result, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, totalWeight, nil
+}
+
+// convertProportionalToCustomIngredients converts proportional quantity to custom ingredients
+func (h *Handler) convertProportionalToCustomIngredients(recipeID int, quantityGrams float64) (CustomIngredients, float64, float64, float64, float64, float64, error) {
+	// Get recipe ingredients
+	recipeIngredients, err := h.recipeRepo.GetIngredients(recipeID)
+	if err != nil {
+		return nil, 0, 0, 0, 0, 0, err
+	}
+
+	// Calculate total recipe weight
+	var totalRecipeWeight float64
+	for _, ingredient := range recipeIngredients {
+		totalRecipeWeight += ingredient.QuantityGrams
+	}
+
+	if totalRecipeWeight == 0 {
+		return nil, 0, 0, 0, 0, 0, errors.New("recipe has no ingredients")
+	}
+
+	// Calculate portion
+	portion := quantityGrams / totalRecipeWeight
+
+	// Build custom ingredients with proportional quantities
+	var customIngredients []CustomIngredientRequest
+	for _, ingredient := range recipeIngredients {
+		customIngredients = append(customIngredients, CustomIngredientRequest{
+			FoodID:        ingredient.FoodID,
+			QuantityGrams: roundToTwo(ingredient.QuantityGrams * portion),
+		})
+	}
+
+	// Calculate nutrition
+	result, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, _, err := h.calculateCustomIngredientsNutrition(customIngredients)
+	return result, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, err
 }
