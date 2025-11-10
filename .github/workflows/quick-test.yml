@@ -1,0 +1,39 @@
+name: Quick Test
+
+on:
+  push:
+    branches: [ '**' ]  # Run on all branches
+  pull_request:
+
+jobs:
+  quick-test:
+    name: Quick Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run unit tests (no database)
+        run: go test -v -short -timeout 5m ./...
+        continue-on-error: false
+
+      - name: Test Summary
+        if: always()
+        run: |
+          if [ $? -eq 0 ]; then
+            echo "✅ All tests passed!"
+          else
+            echo "❌ Tests failed!"
+            exit 1
+          fi

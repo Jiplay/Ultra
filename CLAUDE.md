@@ -2,8 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-# Instead of testing, create a http file in the request folder and the user will run it
-
 ## Project Overview
 
 **Ultra-Bis** is a comprehensive nutrition tracking REST API built with Go and PostgreSQL, designed for athletes and fitness enthusiasts. It provides functionality similar to Samsung Health or MyFitnessPal, including food logging, meal tracking, body metrics monitoring, and personalized nutrition goal recommendations.
@@ -94,6 +92,79 @@ go build -o bin/api cmd/api/main.go
 # Run the binary
 ./bin/api
 ```
+
+### Testing Commands
+
+The project uses automated tests with real PostgreSQL instances via testcontainers.
+
+**Run all tests:**
+```bash
+make test
+# OR
+go test -v -timeout 3m ./...
+```
+
+**Run unit tests only (fast, no database):**
+```bash
+make test-unit
+# OR
+go test -v -short ./...
+```
+
+**Run with coverage report:**
+```bash
+make test-coverage
+# Generates coverage.html report
+```
+
+**Run specific package tests:**
+```bash
+go test -v ./internal/auth     # JWT authentication tests
+go test -v ./internal/food     # Food repository integration tests
+```
+
+**Quick feedback loop:**
+```bash
+make test-quick    # Runs auth + food tests only (~10s)
+```
+
+### Testing Infrastructure
+
+**Test Dependencies:**
+- `testify` - Assertions and test utilities
+- `testcontainers-go` - Real PostgreSQL containers for integration tests
+
+**Test Utilities** (`test/testutil/`):
+- `database.go` - PostgreSQL test container setup
+- `auth.go` - JWT token generation for protected endpoint tests
+- `assertions.go` - Custom assertion helpers
+
+**Example Test Pattern:**
+```go
+func TestRepository_Create(t *testing.T) {
+    // Setup test database
+    db := testutil.SetupTestDB(t)
+    db.AutoMigrate(&Food{})
+    repo := NewRepository(db)
+
+    // Test logic
+    food, err := repo.Create(CreateFoodRequest{...})
+    assert.NoError(t, err)
+    assert.NotZero(t, food.ID)
+}
+```
+
+Each test automatically:
+1. Spins up a fresh PostgreSQL container
+2. Runs migrations
+3. Executes the test
+4. Tears down the container
+
+**Test Coverage:**
+- `internal/auth/jwt_test.go` - JWT token generation/validation (unit tests)
+- `internal/food/repository_test.go` - Food CRUD operations (integration tests)
+
+**Note:** HTTP request files in `request/` folder are still useful for manual testing and debugging.
 
 ## Architecture
 
