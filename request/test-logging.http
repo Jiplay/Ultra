@@ -1,0 +1,23 @@
+### Health Check - Test logging
+GET http://localhost:8080/health
+
+### List all foods - Test logging with GET request
+GET http://localhost:8080/foods
+
+### Create a food - Test logging with POST request
+POST http://localhost:8080/foods
+Content-Type: application/json
+
+{
+  "name": "Test Food",
+  "description": "Testing logging middleware",
+  "calories": 100,
+  "protein": 10,
+  "carbs": 15,
+  "fat": 5,
+  "fiber": 2
+}
+
+### Test logging with query parameters
+GET http://localhost:8080/diary/entries?date=2025-01-15
+Authorization: Bearer YOUR_TOKEN_HERE

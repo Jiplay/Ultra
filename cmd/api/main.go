@@ -11,6 +11,7 @@ import (
 	"ultra-bis/internal/food"
 	"ultra-bis/internal/goal"
 	"ultra-bis/internal/metrics"
+	"ultra-bis/internal/middleware"
 	"ultra-bis/internal/recipe"
 	"ultra-bis/internal/user"
 )
@@ -139,7 +140,10 @@ func main() {
 	log.Println("  GET    /health                 - Health check")
 	log.Println("===========================================")
 
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	// Wrap the mux with logging middleware
+	loggedHandler := middleware.LoggingMiddleware(mux)
+
+	if err := http.ListenAndServe(":"+port, loggedHandler); err != nil {
 		log.Fatal("Server failed to start:", err)
 	}
 }
