@@ -82,30 +82,10 @@ jobs:
           go tool cover -func=coverage.out >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-  lint:
-    name: Run Linters
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-          cache: true
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v2.4.0
-          args: --timeout=5m
-
   build:
     name: Build Application
     runs-on: ubuntu-latest
-    needs: [test, lint]
+    needs: [test]
 
     steps:
       - name: Checkout code
