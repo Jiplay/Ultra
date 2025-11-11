@@ -26,14 +26,3 @@ jobs:
 
       - name: Run unit tests (no database)
         run: go test -v -short -timeout 5m ./...
-        continue-on-error: false
-
-      - name: Test Summary
-        if: always()
-        run: |
-          if [ $? -eq 0 ]; then
-            echo "✅ All tests passed!"
-          else
-            echo "❌ Tests failed!"
-            exit 1
-          fi
