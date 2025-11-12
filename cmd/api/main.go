@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"ultra-bis/internal/auth"
+	"ultra-bis/internal/barcode"
 	"ultra-bis/internal/database"
 	"ultra-bis/internal/diary"
 	"ultra-bis/internal/food"
@@ -61,9 +62,12 @@ func main() {
 	diaryRepo := diary.NewRepository(db)
 	metricsRepo := metrics.NewRepository(db)
 
+	// Initialize services
+	barcodeService := barcode.NewService()
+
 	// Initialize handlers
 	authHandler := auth.NewHandler(userRepo)
-	foodHandler := food.NewHandler(foodRepo)
+	foodHandler := food.NewHandler(foodRepo, barcodeService)
 	recipeHandler := recipe.NewHandler(recipeRepo, foodRepo)
 	goalHandler := goal.NewHandler(goalRepo, userRepo)
 	diaryHandler := diary.NewHandler(diaryRepo, foodRepo, goalRepo)
@@ -108,6 +112,7 @@ func main() {
 	log.Println("  GET    /foods/{id}             - Get food by ID")
 	log.Println("  PUT    /foods/{id}             - Update food")
 	log.Println("  DELETE /foods/{id}             - Delete food")
+	log.Println("  POST   /foods/barcode/{code}   - Scan barcode and create food (protected)")
 	log.Println("-------------------------------------------")
 	log.Println("RECIPES:")
 	log.Println("  POST   /recipes                - Create recipe (protected)")
