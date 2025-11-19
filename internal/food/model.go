@@ -15,6 +15,7 @@ type Food struct {
 	DeletedAt   gorm.DeletedAt `json:"deletedI_at,omitempty" gorm:"index"`
 	Name        string         `json:"name" gorm:"type:varchar(255);not null"`
 	Description string         `json:"description" gorm:"type:text"`
+	Country     string         `json:"country,omitempty" gorm:"type:varchar(255)"`
 	Calories    float64        `json:"calories" gorm:"type:decimal(10,2)"`
 	Protein     float64        `json:"protein" gorm:"type:decimal(10,2)"`
 	Carbs       float64        `json:"carbs" gorm:"type:decimal(10,2)"`
@@ -26,6 +27,7 @@ type Food struct {
 type CreateFoodRequest struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
+	Country     string  `json:"country,omitempty"`
 	Calories    float64 `json:"calories"`
 	Protein     float64 `json:"protein"`
 	Carbs       float64 `json:"carbs"`
@@ -37,6 +39,7 @@ type CreateFoodRequest struct {
 type UpdateFoodRequest struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
+	Country     string  `json:"country,omitempty"`
 	Calories    float64 `json:"calories"`
 	Protein     float64 `json:"protein"`
 	Carbs       float64 `json:"carbs"`

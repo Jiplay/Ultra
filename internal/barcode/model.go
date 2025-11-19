@@ -13,6 +13,7 @@ type OpenFoodFactsProduct struct {
 	ProductName  string                      `json:"product_name"`
 	GenericName  string                      `json:"generic_name"`
 	Brands       string                      `json:"brands"`
+	Countries    string                      `json:"countries"`
 	Nutriments   OpenFoodFactsNutriments     `json:"nutriments"`
 }
 
@@ -30,6 +31,7 @@ type OpenFoodFactsNutriments struct {
 type ProductData struct {
 	Name        string
 	Description string
+	Country     string
 	Calories    float64
 	Protein     float64
 	Carbs       float64

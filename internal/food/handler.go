@@ -251,6 +251,7 @@ func (h *Handler) ScanBarcode(w http.ResponseWriter, r *http.Request) {
 	createReq := CreateFoodRequest{
 		Name:        productData.Name,
 		Description: productData.Description,
+		Country:     productData.Country,
 		Calories:    productData.Calories,
 		Protein:     productData.Protein,
 		Carbs:       productData.Carbs,

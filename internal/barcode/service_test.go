@@ -20,6 +20,7 @@ func TestService_convertToProductData(t *testing.T) {
 				ProductName: "Nutella",
 				GenericName: "Hazelnut cocoa spread",
 				Brands:      "Ferrero",
+				Countries:   "France",
 				Nutriments: OpenFoodFactsNutriments{
 					EnergyKcal100g:    539,
 					Proteins100g:      6.3,
@@ -31,6 +32,7 @@ func TestService_convertToProductData(t *testing.T) {
 			expected: &ProductData{
 				Name:        "Nutella",
 				Description: "Ferrero - Hazelnut cocoa spread",
+				Country:     "France",
 				Calories:    539,
 				Protein:     6.3,
 				Carbs:       57.5,
@@ -43,6 +45,7 @@ func TestService_convertToProductData(t *testing.T) {
 			product: &OpenFoodFactsProduct{
 				ProductName: "Coca Cola",
 				Brands:      "Coca-Cola",
+				Countries:   "United States",
 				Nutriments: OpenFoodFactsNutriments{
 					EnergyKcal100g:    42,
 					Proteins100g:      0,
@@ -54,6 +57,7 @@ func TestService_convertToProductData(t *testing.T) {
 			expected: &ProductData{
 				Name:        "Coca Cola",
 				Description: "Coca-Cola",
+				Country:     "United States",
 				Calories:    42,
 				Protein:     0,
 				Carbs:       10.6,
@@ -77,6 +81,7 @@ func TestService_convertToProductData(t *testing.T) {
 			expected: &ProductData{
 				Name:        "Apple",
 				Description: "Fresh fruit",
+				Country:     "",
 				Calories:    52,
 				Protein:     0.3,
 				Carbs:       14,
@@ -99,6 +104,7 @@ func TestService_convertToProductData(t *testing.T) {
 			expected: &ProductData{
 				Name:        "Mystery Product",
 				Description: "",
+				Country:     "",
 				Calories:    100,
 				Protein:     5,
 				Carbs:       10,
