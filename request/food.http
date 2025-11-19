@@ -184,3 +184,82 @@ Content-Type: application/json
 }
 
 ###
+
+###########################################
+### BARCODE SCANNING TESTS
+###########################################
+
+### Scan Barcode - Nutella (valid product)
+### This will create a food entry with data from Open Food Facts
+POST http://localhost:8080/foods/barcode/3017620422003
+Authorization: Bearer {{token}}
+
+###
+
+### Scan Barcode - Coca-Cola (valid product)
+POST http://localhost:8080/foods/barcode/5449000000996
+Authorization: Bearer {{token}}
+
+###
+
+### Scan Barcode - Danone Yogurt (valid product)
+POST http://localhost:8080/foods/barcode/3228857000852
+Authorization: Bearer {{token}}
+
+###
+
+### Scan Barcode - Barilla Pasta (valid product)
+POST http://localhost:8080/foods/barcode/8076809513012
+Authorization: Bearer {{token}}
+
+###
+
+### Scan Barcode - Invalid/Non-existent product (should return 404)
+POST http://localhost:8080/foods/barcode/0000000000000
+Authorization: Bearer {{token}}
+
+###
+
+### Scan Barcode - Without authentication (should return 401)
+POST http://localhost:8080/foods/barcode/3017620422003
+
+###
+
+### Scan Barcode - Empty barcode (should return 400)
+POST http://localhost:8080/foods/barcode/
+Authorization: Bearer {{token}}
+
+###
+
+###########################################
+### COMPLETE WORKFLOW: SCAN -> ADD TO DIARY
+###########################################
+
+### Step 1: Scan a product (e.g., Nutella)
+### Copy the "id" from the response for Step 2
+POST http://localhost:8080/foods/barcode/3017620422003
+Authorization: Bearer {{token}}
+
+###
+
+### Step 2: Add the scanned food to diary
+### Replace {food_id} with the ID from Step 1 response
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 1,
+  "date": "2025-01-15",
+  "meal_type": "breakfast",
+  "quantity_grams": 30,
+  "notes": "Nutella scanned via barcode"
+}
+
+###
+
+### Step 3: Get diary summary to verify
+GET http://localhost:8080/diary/summary/2025-01-15
+Authorization: Bearer {{token}}
+
+###
