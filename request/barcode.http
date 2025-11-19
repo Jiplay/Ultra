@@ -1,0 +1,80 @@
+### Barcode Scanning API Tests
+### Use this file with IntelliJ IDEA/GoLand (built-in) or VS Code (with REST Client extension)
+
+@baseUrl = http://localhost:8080
+@token = YOUR_JWT_TOKEN_HERE
+
+### 1. Register a test user (if needed)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "barcode_test@example.com",
+  "password": "password123",
+  "name": "Barcode Tester",
+  "age": 25,
+  "gender": "male",
+  "height": 180,
+  "activity_level": "moderately_active",
+  "goal_type": "maintenance"
+}
+
+### 2. Login to get token
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "barcode_test@example.com",
+  "password": "password123"
+}
+
+### 3. Scan Nutella barcode (valid product)
+POST {{baseUrl}}/foods/barcode/3017620422003
+Authorization: Bearer {{token}}
+
+### 4. Scan Coca-Cola barcode (valid product)
+POST {{baseUrl}}/foods/barcode/5449000000996
+Authorization: Bearer {{token}}
+
+### 5. Scan Danone yogurt barcode (valid product)
+POST {{baseUrl}}/foods/barcode/3228857000852
+Authorization: Bearer {{token}}
+
+### 6. Scan Barilla pasta barcode (valid product)
+POST {{baseUrl}}/foods/barcode/8076809513012
+Authorization: Bearer {{token}}
+
+### 7. Scan invalid barcode (product not found)
+POST {{baseUrl}}/foods/barcode/0000000000000
+Authorization: Bearer {{token}}
+
+### 8. Scan empty barcode (should fail)
+POST {{baseUrl}}/foods/barcode/
+Authorization: Bearer {{token}}
+
+### 9. Scan without authentication (should fail with 401)
+POST {{baseUrl}}/foods/barcode/3017620422003
+
+### 10. Get all foods (verify scanned products were created)
+GET {{baseUrl}}/foods
+Authorization: Bearer {{token}}
+
+### 11. Get specific scanned food by ID (replace {id} with actual ID from previous response)
+GET {{baseUrl}}/foods/1
+Authorization: Bearer {{token}}
+
+### 12. Add scanned food to diary
+### First scan a product, then use its ID here
+POST {{baseUrl}}/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 1,
+  "date": "2025-01-15",
+  "meal_type": "breakfast",
+  "quantity_grams": 30,
+  "notes": "Scanned product added to breakfast"
+}
+
+###

@@ -5,16 +5,22 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"ultra-bis/internal/barcode"
 )
 
 // Handler handles HTTP requests for food resources
 type Handler struct {
-	repo *Repository
+	repo           *Repository
+	barcodeService *barcode.Service
 }
 
 // NewHandler creates a new food handler
-func NewHandler(repo *Repository) *Handler {
-	return &Handler{repo: repo}
+func NewHandler(repo *Repository, barcodeService *barcode.Service) *Handler {
+	return &Handler{
+		repo:           repo,
+		barcodeService: barcodeService,
+	}
 }
 
 // ErrorResponse represents an error response
@@ -204,4 +210,59 @@ func (h *Handler) handleFoodsWithID(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
+}
+
+// ScanBarcode handles POST /foods/barcode/{code}
+// Scans a barcode using Open Food Facts API and creates a food entry
+func (h *Handler) ScanBarcode(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// Extract barcode from URL path
+	// Expected path: /foods/barcode/{code}
+	path := strings.TrimPrefix(r.URL.Path, "/foods/barcode/")
+	barcode := strings.TrimSpace(path)
+
+	if barcode == "" {
+		writeError(w, http.StatusBadRequest, "Barcode is required")
+		return
+	}
+
+	// Fetch product data from Open Food Facts
+	productData, err := h.barcodeService.ScanBarcode(barcode)
+	if err != nil {
+		if strings.Contains(err.Error(), "product not found") {
+			writeError(w, http.StatusNotFound, "Product not found for barcode: "+barcode)
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "Failed to scan barcode: "+err.Error())
+		return
+	}
+
+	// Validate product data
+	if productData.Name == "" {
+		writeError(w, http.StatusBadRequest, "Product name is missing from barcode data")
+		return
+	}
+
+	// Create food item from scanned data
+	createReq := CreateFoodRequest{
+		Name:        productData.Name,
+		Description: productData.Description,
+		Calories:    productData.Calories,
+		Protein:     productData.Protein,
+		Carbs:       productData.Carbs,
+		Fat:         productData.Fat,
+		Fiber:       productData.Fiber,
+	}
+
+	food, err := h.repo.Create(createReq)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to create food: "+err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, food)
 }
