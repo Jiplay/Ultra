@@ -87,7 +87,6 @@ func (s *Service) convertToProductData(product *OpenFoodFactsProduct) *ProductDa
 	return &ProductData{
 		Name:        product.ProductName,
 		Description: description,
-		Country:     product.Countries,
 		Calories:    product.Nutriments.EnergyKcal100g,
 		Protein:     product.Nutriments.Proteins100g,
 		Carbs:       product.Nutriments.Carbohydrates100g,

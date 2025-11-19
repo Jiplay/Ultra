@@ -22,7 +22,6 @@ func (r *Repository) Create(req CreateFoodRequest) (*Food, error) {
 	food := &Food{
 		Name:        req.Name,
 		Description: req.Description,
-		Country:     req.Country,
 		Calories:    req.Calories,
 		Protein:     req.Protein,
 		Carbs:       req.Carbs,
@@ -80,7 +79,6 @@ func (r *Repository) Update(id int, req UpdateFoodRequest) (*Food, error) {
 	// Update fields
 	food.Name = req.Name
 	food.Description = req.Description
-	food.Country = req.Country
 	food.Calories = req.Calories
 	food.Protein = req.Protein
 	food.Carbs = req.Carbs
