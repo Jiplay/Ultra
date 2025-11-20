@@ -89,7 +89,7 @@ func TestRepository_GetAll(t *testing.T) {
 	}
 
 	// Get all foods
-	result, err := repo.GetAll()
+	result, err := repo.GetAll(nil)
 	assert.NoError(t, err)
 	assert.Len(t, result, 3, "Should return all 3 foods")
 }
@@ -138,4 +138,99 @@ func TestRepository_Delete(t *testing.T) {
 	found, err := repo.GetByID(int(created.ID))
 	assert.Error(t, err)
 	assert.Nil(t, found)
+}
+
+func TestRepository_Create_WithTags(t *testing.T) {
+	_, repo := setupFoodTest(t)
+
+	req := CreateFoodRequest{
+		Name:        "Chicken Breast",
+		Description: "Healthy protein source",
+		Calories:    165,
+		Protein:     31,
+		Carbs:       0,
+		Fat:         3.6,
+		Fiber:       0,
+		Tags:        []string{"lock in", "protein"},
+	}
+
+	food, err := repo.Create(req)
+	assert.NoError(t, err)
+	require.NotNil(t, food)
+	assert.NotZero(t, food.ID)
+	assert.Equal(t, req.Name, food.Name)
+	assert.Len(t, food.Tags, 2)
+	assert.Contains(t, food.Tags, "lock in")
+	assert.Contains(t, food.Tags, "protein")
+}
+
+func TestRepository_GetAll_FilterByTags(t *testing.T) {
+	_, repo := setupFoodTest(t)
+
+	// Create test foods with different tags
+	foods := []CreateFoodRequest{
+		{Name: "Chicken", Calories: 165, Protein: 31, Tags: []string{"lock in", "protein"}},
+		{Name: "Pizza", Calories: 266, Protein: 11, Tags: []string{"going out"}},
+		{Name: "Salmon", Calories: 206, Protein: 22, Tags: []string{"lock in", "omega-3"}},
+		{Name: "Burger", Calories: 354, Protein: 20, Tags: []string{"going out"}},
+	}
+
+	for _, f := range foods {
+		_, err := repo.Create(f)
+		require.NoError(t, err)
+	}
+
+	// Get all foods (no filter)
+	allFoods, err := repo.GetAll(nil)
+	assert.NoError(t, err)
+	assert.Len(t, allFoods, 4, "Should return all 4 foods")
+
+	// Filter by "lock in" tag
+	lockInFoods, err := repo.GetAll([]string{"lock in"})
+	assert.NoError(t, err)
+	assert.Len(t, lockInFoods, 2, "Should return 2 foods with 'lock in' tag")
+
+	// Filter by "going out" tag
+	goingOutFoods, err := repo.GetAll([]string{"going out"})
+	assert.NoError(t, err)
+	assert.Len(t, goingOutFoods, 2, "Should return 2 foods with 'going out' tag")
+
+	// Filter by multiple tags (OR logic - items with ANY of these tags)
+	multipleTags, err := repo.GetAll([]string{"lock in", "going out"})
+	assert.NoError(t, err)
+	assert.Len(t, multipleTags, 4, "Should return all foods that have either tag")
+
+	// Filter by tag that doesn't exist
+	noMatchFoods, err := repo.GetAll([]string{"nonexistent"})
+	assert.NoError(t, err)
+	assert.Len(t, noMatchFoods, 0, "Should return no foods")
+}
+
+func TestRepository_Update_WithTags(t *testing.T) {
+	_, repo := setupFoodTest(t)
+
+	// Create a food
+	createReq := CreateFoodRequest{
+		Name:     "Original Name",
+		Calories: 100,
+		Protein:  10,
+		Tags:     []string{"original"},
+	}
+	created, err := repo.Create(createReq)
+	require.NoError(t, err)
+
+	// Update the food with new tags
+	updateReq := UpdateFoodRequest{
+		Name:     "Updated Name",
+		Calories: 200,
+		Protein:  20,
+		Tags:     []string{"updated", "new tag"},
+	}
+	updated, err := repo.Update(int(created.ID), updateReq)
+	assert.NoError(t, err)
+	assert.Equal(t, "Updated Name", updated.Name)
+	assert.Len(t, updated.Tags, 2)
+	assert.Contains(t, updated.Tags, "updated")
+	assert.Contains(t, updated.Tags, "new tag")
+	assert.NotContains(t, updated.Tags, "original")
 }

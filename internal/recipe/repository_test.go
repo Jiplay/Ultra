@@ -307,3 +307,127 @@ func TestRepository_CalculateNutrition_ComplexRecipe(t *testing.T) {
 	assert.InDelta(t, 8.70, result.FatPer100g, 0.2)
 	assert.InDelta(t, 2.38, result.FiberPer100g, 0.2)
 }
+
+func TestRepository_Create_WithTags(t *testing.T) {
+	_, recipeRepo, foodRepo := setupRecipeTest(t)
+
+	chicken := createTestFood(t, foodRepo, "Chicken", 165, 31, 0, 3.6, 0)
+
+	recipe := &Recipe{
+		Name: "Healthy Meal",
+		Tags: []string{"lock in", "high protein"},
+		Ingredients: []RecipeIngredient{
+			{FoodID: chicken.ID, QuantityGrams: 100},
+		},
+	}
+
+	err := recipeRepo.Create(recipe)
+	require.NoError(t, err)
+
+	// Retrieve recipe and verify tags
+	retrieved, err := recipeRepo.GetByID(int(recipe.ID))
+	assert.NoError(t, err)
+	assert.Len(t, retrieved.Tags, 2)
+	assert.Contains(t, retrieved.Tags, "lock in")
+	assert.Contains(t, retrieved.Tags, "high protein")
+}
+
+func TestRepository_GetByUserID_FilterByTags(t *testing.T) {
+	_, recipeRepo, foodRepo := setupRecipeTest(t)
+
+	userID := uint(1)
+	chicken := createTestFood(t, foodRepo, "Chicken", 165, 31, 0, 3.6, 0)
+	rice := createTestFood(t, foodRepo, "Rice", 130, 2.7, 28, 0.3, 0.4)
+
+	// Create recipes with different tags
+	recipe1 := &Recipe{
+		Name:   "Healthy Bowl",
+		UserID: &userID,
+		Tags:   []string{"lock in"},
+		Ingredients: []RecipeIngredient{
+			{FoodID: chicken.ID, QuantityGrams: 100},
+		},
+	}
+	recipe2 := &Recipe{
+		Name:   "Party Meal",
+		UserID: &userID,
+		Tags:   []string{"going out"},
+		Ingredients: []RecipeIngredient{
+			{FoodID: rice.ID, QuantityGrams: 200},
+		},
+	}
+	recipe3 := &Recipe{
+		Name:   "Protein Power",
+		UserID: &userID,
+		Tags:   []string{"lock in", "high protein"},
+		Ingredients: []RecipeIngredient{
+			{FoodID: chicken.ID, QuantityGrams: 200},
+		},
+	}
+
+	require.NoError(t, recipeRepo.Create(recipe1))
+	require.NoError(t, recipeRepo.Create(recipe2))
+	require.NoError(t, recipeRepo.Create(recipe3))
+
+	// Get all recipes (no filter)
+	allRecipes, err := recipeRepo.GetByUserID(userID, true, nil)
+	assert.NoError(t, err)
+	assert.Len(t, allRecipes, 3, "Should return all 3 recipes")
+
+	// Filter by "lock in" tag
+	lockInRecipes, err := recipeRepo.GetByUserID(userID, true, []string{"lock in"})
+	assert.NoError(t, err)
+	assert.Len(t, lockInRecipes, 2, "Should return 2 recipes with 'lock in' tag")
+
+	// Filter by "going out" tag
+	goingOutRecipes, err := recipeRepo.GetByUserID(userID, true, []string{"going out"})
+	assert.NoError(t, err)
+	assert.Len(t, goingOutRecipes, 1, "Should return 1 recipe with 'going out' tag")
+
+	// Filter by multiple tags (OR logic)
+	multipleTags, err := recipeRepo.GetByUserID(userID, true, []string{"lock in", "going out"})
+	assert.NoError(t, err)
+	assert.Len(t, multipleTags, 3, "Should return all recipes that have either tag")
+
+	// Filter by tag that doesn't exist
+	noMatchRecipes, err := recipeRepo.GetByUserID(userID, true, []string{"nonexistent"})
+	assert.NoError(t, err)
+	assert.Len(t, noMatchRecipes, 0, "Should return no recipes")
+}
+
+func TestRepository_GetByUserIDWithNutrition_FilterByTags(t *testing.T) {
+	_, recipeRepo, foodRepo := setupRecipeTest(t)
+
+	userID := uint(1)
+	chicken := createTestFood(t, foodRepo, "Chicken", 165, 31, 0, 3.6, 0)
+	rice := createTestFood(t, foodRepo, "Rice", 130, 2.7, 28, 0.3, 0.4)
+
+	// Create recipes with different tags
+	recipe1 := &Recipe{
+		Name:   "Healthy Bowl",
+		UserID: &userID,
+		Tags:   []string{"lock in"},
+		Ingredients: []RecipeIngredient{
+			{FoodID: chicken.ID, QuantityGrams: 100},
+		},
+	}
+	recipe2 := &Recipe{
+		Name:   "Party Meal",
+		UserID: &userID,
+		Tags:   []string{"going out"},
+		Ingredients: []RecipeIngredient{
+			{FoodID: rice.ID, QuantityGrams: 200},
+		},
+	}
+
+	require.NoError(t, recipeRepo.Create(recipe1))
+	require.NoError(t, recipeRepo.Create(recipe2))
+
+	// Get recipes with nutrition, filtered by "lock in" tag
+	lockInRecipes, err := recipeRepo.GetByUserIDWithNutrition(userID, true, []string{"lock in"}, foodRepo)
+	assert.NoError(t, err)
+	assert.Len(t, lockInRecipes, 1, "Should return 1 recipe with 'lock in' tag")
+	assert.Equal(t, "Healthy Bowl", lockInRecipes[0].Name)
+	assert.Contains(t, lockInRecipes[0].Tags, "lock in")
+	assert.InDelta(t, 165.0, lockInRecipes[0].TotalCalories, 0.1)
+}
