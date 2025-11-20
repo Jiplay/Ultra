@@ -19,7 +19,7 @@ Content-Type: application/json
   "carbs": 0,
   "fat": 3.6,
   "fiber": 0,
-  "tags": ["lock in"]
+  "tags": ["lockin"]
 }
 
 ###
@@ -37,7 +37,7 @@ Content-Type: application/json
   "carbs": 45,
   "fat": 1.8,
   "fiber": 3.5,
-  "tags": ["lock in"]
+  "tags": ["lockin"]
 }
 
 ###
@@ -93,7 +93,7 @@ Content-Type: application/json
 
 ###
 
-### Create Food - Pizza (going out tag)
+### Create Food - Pizza (out tag)
 POST http://localhost:8080/foods
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -106,12 +106,12 @@ Content-Type: application/json
   "carbs": 33,
   "fat": 10,
   "fiber": 2.5,
-  "tags": ["going out"]
+  "tags": ["out"]
 }
 
 ###
 
-### Create Food - Burger (going out tag)
+### Create Food - Burger (out tag)
 POST http://localhost:8080/foods
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -124,7 +124,7 @@ Content-Type: application/json
   "carbs": 33,
   "fat": 16,
   "fiber": 2,
-  "tags": ["going out"]
+  "tags": ["out"]
 }
 
 ###
@@ -135,20 +135,20 @@ Authorization: Bearer {{token}}
 
 ###
 
-### Get Foods filtered by "lock in" tag
-GET http://localhost:8080/foods?tags=lock in
+### Get Foods filtered by "lockin" tag
+GET http://localhost:8080/foods?tags=lockin
 Authorization: Bearer {{token}}
 
 ###
 
-### Get Foods filtered by "going out" tag
-GET http://localhost:8080/foods?tags=going out
+### Get Foods filtered by "out" tag
+GET http://localhost:8080/foods?tags=out
 Authorization: Bearer {{token}}
 
 ###
 
-### Get Foods filtered by multiple tags (lock in OR going out)
-GET http://localhost:8080/foods?tags=lock in,going out
+### Get Foods filtered by multiple tags (lockin OR out)
+GET http://localhost:8080/foods?tags=lockin,out
 Authorization: Bearer {{token}}
 
 ###

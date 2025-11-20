@@ -315,7 +315,7 @@ func TestRepository_Create_WithTags(t *testing.T) {
 
 	recipe := &Recipe{
 		Name: "Healthy Meal",
-		Tags: []string{"lock in", "high protein"},
+		Tags: []string{"lockin"},
 		Ingredients: []RecipeIngredient{
 			{FoodID: chicken.ID, QuantityGrams: 100},
 		},
@@ -327,9 +327,8 @@ func TestRepository_Create_WithTags(t *testing.T) {
 	// Retrieve recipe and verify tags
 	retrieved, err := recipeRepo.GetByID(int(recipe.ID))
 	assert.NoError(t, err)
-	assert.Len(t, retrieved.Tags, 2)
-	assert.Contains(t, retrieved.Tags, "lock in")
-	assert.Contains(t, retrieved.Tags, "high protein")
+	assert.Len(t, retrieved.Tags, 1)
+	assert.Contains(t, retrieved.Tags, "lockin")
 }
 
 func TestRepository_GetByUserID_FilterByTags(t *testing.T) {
@@ -343,7 +342,7 @@ func TestRepository_GetByUserID_FilterByTags(t *testing.T) {
 	recipe1 := &Recipe{
 		Name:   "Healthy Bowl",
 		UserID: &userID,
-		Tags:   []string{"lock in"},
+		Tags:   []string{"lockin"},
 		Ingredients: []RecipeIngredient{
 			{FoodID: chicken.ID, QuantityGrams: 100},
 		},
@@ -351,7 +350,7 @@ func TestRepository_GetByUserID_FilterByTags(t *testing.T) {
 	recipe2 := &Recipe{
 		Name:   "Party Meal",
 		UserID: &userID,
-		Tags:   []string{"going out"},
+		Tags:   []string{"out"},
 		Ingredients: []RecipeIngredient{
 			{FoodID: rice.ID, QuantityGrams: 200},
 		},
@@ -359,7 +358,7 @@ func TestRepository_GetByUserID_FilterByTags(t *testing.T) {
 	recipe3 := &Recipe{
 		Name:   "Protein Power",
 		UserID: &userID,
-		Tags:   []string{"lock in", "high protein"},
+		Tags:   []string{"lockin"},
 		Ingredients: []RecipeIngredient{
 			{FoodID: chicken.ID, QuantityGrams: 200},
 		},
@@ -374,18 +373,18 @@ func TestRepository_GetByUserID_FilterByTags(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, allRecipes, 3, "Should return all 3 recipes")
 
-	// Filter by "lock in" tag
-	lockInRecipes, err := recipeRepo.GetByUserID(userID, true, []string{"lock in"})
+	// Filter by "lockin" tag
+	lockInRecipes, err := recipeRepo.GetByUserID(userID, true, []string{"lockin"})
 	assert.NoError(t, err)
-	assert.Len(t, lockInRecipes, 2, "Should return 2 recipes with 'lock in' tag")
+	assert.Len(t, lockInRecipes, 2, "Should return 2 recipes with 'lockin' tag")
 
-	// Filter by "going out" tag
-	goingOutRecipes, err := recipeRepo.GetByUserID(userID, true, []string{"going out"})
+	// Filter by "out" tag
+	outRecipes, err := recipeRepo.GetByUserID(userID, true, []string{"out"})
 	assert.NoError(t, err)
-	assert.Len(t, goingOutRecipes, 1, "Should return 1 recipe with 'going out' tag")
+	assert.Len(t, outRecipes, 1, "Should return 1 recipe with 'out' tag")
 
 	// Filter by multiple tags (OR logic)
-	multipleTags, err := recipeRepo.GetByUserID(userID, true, []string{"lock in", "going out"})
+	multipleTags, err := recipeRepo.GetByUserID(userID, true, []string{"lockin", "out"})
 	assert.NoError(t, err)
 	assert.Len(t, multipleTags, 3, "Should return all recipes that have either tag")
 
@@ -406,7 +405,7 @@ func TestRepository_GetByUserIDWithNutrition_FilterByTags(t *testing.T) {
 	recipe1 := &Recipe{
 		Name:   "Healthy Bowl",
 		UserID: &userID,
-		Tags:   []string{"lock in"},
+		Tags:   []string{"lockin"},
 		Ingredients: []RecipeIngredient{
 			{FoodID: chicken.ID, QuantityGrams: 100},
 		},
@@ -414,7 +413,7 @@ func TestRepository_GetByUserIDWithNutrition_FilterByTags(t *testing.T) {
 	recipe2 := &Recipe{
 		Name:   "Party Meal",
 		UserID: &userID,
-		Tags:   []string{"going out"},
+		Tags:   []string{"out"},
 		Ingredients: []RecipeIngredient{
 			{FoodID: rice.ID, QuantityGrams: 200},
 		},
@@ -423,11 +422,11 @@ func TestRepository_GetByUserIDWithNutrition_FilterByTags(t *testing.T) {
 	require.NoError(t, recipeRepo.Create(recipe1))
 	require.NoError(t, recipeRepo.Create(recipe2))
 
-	// Get recipes with nutrition, filtered by "lock in" tag
-	lockInRecipes, err := recipeRepo.GetByUserIDWithNutrition(userID, true, []string{"lock in"}, foodRepo)
+	// Get recipes with nutrition, filtered by "lockin" tag
+	lockInRecipes, err := recipeRepo.GetByUserIDWithNutrition(userID, true, []string{"lockin"}, foodRepo)
 	assert.NoError(t, err)
-	assert.Len(t, lockInRecipes, 1, "Should return 1 recipe with 'lock in' tag")
+	assert.Len(t, lockInRecipes, 1, "Should return 1 recipe with 'lockin' tag")
 	assert.Equal(t, "Healthy Bowl", lockInRecipes[0].Name)
-	assert.Contains(t, lockInRecipes[0].Tags, "lock in")
+	assert.Contains(t, lockInRecipes[0].Tags, "lockin")
 	assert.InDelta(t, 165.0, lockInRecipes[0].TotalCalories, 0.1)
 }

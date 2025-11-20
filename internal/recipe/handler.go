@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"ultra-bis/internal/common"
 	"ultra-bis/internal/food"
 )
 
@@ -62,6 +63,12 @@ func (h *Handler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 	// Validation
 	if req.Name == "" {
 		writeError(w, http.StatusBadRequest, "Name is required")
+		return
+	}
+
+	// Validate tags
+	if len(req.Tags) > 0 && !common.ValidateTags(req.Tags) {
+		writeError(w, http.StatusBadRequest, "Invalid tags. Valid values are: "+strings.Join(common.GetValidTagStrings(), ", "))
 		return
 	}
 
@@ -227,6 +234,12 @@ func (h *Handler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 	var req UpdateRecipeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validate tags if provided
+	if len(req.Tags) > 0 && !common.ValidateTags(req.Tags) {
+		writeError(w, http.StatusBadRequest, "Invalid tags. Valid values are: "+strings.Join(common.GetValidTagStrings(), ", "))
 		return
 	}
 

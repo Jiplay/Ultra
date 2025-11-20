@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"ultra-bis/internal/barcode"
+	"ultra-bis/internal/common"
 )
 
 // Handler handles HTTP requests for food resources
@@ -56,6 +57,12 @@ func (h *Handler) CreateFood(w http.ResponseWriter, r *http.Request) {
 	// Basic validation
 	if req.Name == "" {
 		writeError(w, http.StatusBadRequest, "Name is required")
+		return
+	}
+
+	// Validate tags
+	if len(req.Tags) > 0 && !common.ValidateTags(req.Tags) {
+		writeError(w, http.StatusBadRequest, "Invalid tags. Valid values are: "+strings.Join(common.GetValidTagStrings(), ", "))
 		return
 	}
 
@@ -144,6 +151,12 @@ func (h *Handler) UpdateFood(w http.ResponseWriter, r *http.Request) {
 	// Basic validation
 	if req.Name == "" {
 		writeError(w, http.StatusBadRequest, "Name is required")
+		return
+	}
+
+	// Validate tags
+	if len(req.Tags) > 0 && !common.ValidateTags(req.Tags) {
+		writeError(w, http.StatusBadRequest, "Invalid tags. Valid values are: "+strings.Join(common.GetValidTagStrings(), ", "))
 		return
 	}
 
