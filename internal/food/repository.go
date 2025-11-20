@@ -62,7 +62,7 @@ func (r *Repository) GetAll(tags []string) ([]Food, error) {
 
 	// Filter by tags if provided (foods with any of the specified tags)
 	if len(tags) > 0 {
-		query = query.Where("tags && ?", pq.Array(tags))
+		query = query.Where("tags && ?", pq.StringArray(tags))
 	}
 
 	result := query.Find(&foods)

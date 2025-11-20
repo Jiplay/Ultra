@@ -52,7 +52,7 @@ func (r *Repository) GetByUserID(userID uint, userOnly bool, tags []string) ([]R
 
 	// Filter by tags if provided (recipes with any of the specified tags)
 	if len(tags) > 0 {
-		query = query.Where("tags && ?", pq.Array(tags))
+		query = query.Where("tags && ?", pq.StringArray(tags))
 	}
 
 	err := query.Find(&recipes).Error
