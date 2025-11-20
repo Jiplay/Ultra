@@ -95,13 +95,25 @@ func (h *Handler) GetFood(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAllFoods handles GET /foods
+// Supports optional query parameter: ?tags=tag1,tag2 to filter by tags
 func (h *Handler) GetAllFoods(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	foods, err := h.repo.GetAll()
+	// Parse tags query parameter
+	var tags []string
+	tagsParam := r.URL.Query().Get("tags")
+	if tagsParam != "" {
+		tags = strings.Split(tagsParam, ",")
+		// Trim whitespace from each tag
+		for i := range tags {
+			tags[i] = strings.TrimSpace(tags[i])
+		}
+	}
+
+	foods, err := h.repo.GetAll(tags)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

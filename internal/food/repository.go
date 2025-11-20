@@ -27,6 +27,7 @@ func (r *Repository) Create(req CreateFoodRequest) (*Food, error) {
 		Carbs:       req.Carbs,
 		Fat:         req.Fat,
 		Fiber:       req.Fiber,
+		Tags:        req.Tags,
 	}
 
 	result := r.db.Create(food)
@@ -53,10 +54,17 @@ func (r *Repository) GetByID(id int) (*Food, error) {
 }
 
 // GetAll retrieves all food items from the database
-func (r *Repository) GetAll() ([]Food, error) {
+// If tags are provided, filters foods that have ANY of the specified tags
+func (r *Repository) GetAll(tags []string) ([]Food, error) {
 	var foods []Food
-	result := r.db.Order("created_at DESC").Find(&foods)
+	query := r.db.Order("created_at DESC")
 
+	// Filter by tags if provided (foods with any of the specified tags)
+	if len(tags) > 0 {
+		query = query.Where("tags && ?", tags)
+	}
+
+	result := query.Find(&foods)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get foods: %w", result.Error)
 	}
@@ -84,6 +92,7 @@ func (r *Repository) Update(id int, req UpdateFoodRequest) (*Food, error) {
 	food.Carbs = req.Carbs
 	food.Fat = req.Fat
 	food.Fiber = req.Fiber
+	food.Tags = req.Tags
 
 	result = r.db.Save(&food)
 	if result.Error != nil {

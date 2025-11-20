@@ -36,7 +36,8 @@ func (r *Repository) GetAll() ([]Recipe, error) {
 }
 
 // GetByUserID retrieves recipes for a specific user (includes global recipes)
-func (r *Repository) GetByUserID(userID uint, userOnly bool) ([]Recipe, error) {
+// If tags are provided, filters recipes that have ANY of the specified tags
+func (r *Repository) GetByUserID(userID uint, userOnly bool, tags []string) ([]Recipe, error) {
 	var recipes []Recipe
 	query := r.db.Preload("Ingredients")
 
@@ -46,6 +47,11 @@ func (r *Repository) GetByUserID(userID uint, userOnly bool) ([]Recipe, error) {
 	} else {
 		// User's private recipes + global recipes
 		query = query.Where("user_id = ? OR user_id IS NULL", userID)
+	}
+
+	// Filter by tags if provided (recipes with any of the specified tags)
+	if len(tags) > 0 {
+		query = query.Where("tags && ?", tags)
 	}
 
 	err := query.Find(&recipes).Error
@@ -143,8 +149,9 @@ func (r *Repository) GetAllWithNutrition(foodRepo *food.Repository) ([]RecipeLis
 }
 
 // GetByUserIDWithNutrition retrieves recipes for a user with nutrition and ingredient details
-func (r *Repository) GetByUserIDWithNutrition(userID uint, userOnly bool, foodRepo *food.Repository) ([]RecipeListResponse, error) {
-	recipes, err := r.GetByUserID(userID, userOnly)
+// If tags are provided, filters recipes that have ANY of the specified tags
+func (r *Repository) GetByUserIDWithNutrition(userID uint, userOnly bool, tags []string, foodRepo *food.Repository) ([]RecipeListResponse, error) {
+	recipes, err := r.GetByUserID(userID, userOnly, tags)
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +170,7 @@ func (r *Repository) enrichRecipesWithNutrition(recipes []Recipe, foodRepo *food
 			UpdatedAt:   recipe.UpdatedAt,
 			Name:        recipe.Name,
 			UserID:      recipe.UserID,
+			Tags:        recipe.Tags,
 			Ingredients: make([]IngredientWithDetails, 0, len(recipe.Ingredients)),
 		}
 

@@ -20,26 +20,29 @@ type Food struct {
 	Carbs       float64        `json:"carbs" gorm:"type:decimal(10,2)"`
 	Fat         float64        `json:"fat" gorm:"type:decimal(10,2)"`
 	Fiber       float64        `json:"fiber" gorm:"type:decimal(10,2)"`
+	Tags        []string       `json:"tags,omitempty" gorm:"type:text[]"`
 }
 
 // CreateFoodRequest represents the request body for creating a food item
 type CreateFoodRequest struct {
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Calories    float64 `json:"calories"`
-	Protein     float64 `json:"protein"`
-	Carbs       float64 `json:"carbs"`
-	Fat         float64 `json:"fat"`
-	Fiber       float64 `json:"fiber"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Calories    float64  `json:"calories"`
+	Protein     float64  `json:"protein"`
+	Carbs       float64  `json:"carbs"`
+	Fat         float64  `json:"fat"`
+	Fiber       float64  `json:"fiber"`
+	Tags        []string `json:"tags,omitempty"`
 }
 
 // UpdateFoodRequest represents the request body for updating a food item
 type UpdateFoodRequest struct {
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Calories    float64 `json:"calories"`
-	Protein     float64 `json:"protein"`
-	Carbs       float64 `json:"carbs"`
-	Fat         float64 `json:"fat"`
-	Fiber       float64 `json:"fiber"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Calories    float64  `json:"calories"`
+	Protein     float64  `json:"protein"`
+	Carbs       float64  `json:"carbs"`
+	Fat         float64  `json:"fat"`
+	Fiber       float64  `json:"fiber"`
+	Tags        []string `json:"tags,omitempty"`
 }

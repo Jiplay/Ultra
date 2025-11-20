@@ -124,7 +124,7 @@ Authorization: Bearer {{token}}
 ### 1. CREATE RECIPES
 ###############################################
 
-### Create Recipe 1 - Chicken & Rice Bowl (Protected)
+### Create Recipe 1 - Chicken & Rice Bowl (with "lock in" tag)
 ### Total: 200g chicken + 150g rice + 15g oil + 100g broccoli = 465g total
 POST http://localhost:8080/recipes
 Authorization: Bearer {{token}}
@@ -132,6 +132,7 @@ Content-Type: application/json
 
 {
   "name": "Chicken & Rice Bowl",
+  "tags": ["lock in"],
   "ingredients": [
     {
       "food_id": 26,
@@ -146,7 +147,7 @@ Content-Type: application/json
 
 ###
 
-### Create Recipe 2 - Simple Salmon Dinner (Protected)
+### Create Recipe 2 - Simple Salmon Dinner (with "lock in" tag)
 ### Total: 150g salmon + 100g rice + 200g broccoli + 7.5g oil = 457.5g total
 POST http://localhost:8080/recipes
 Authorization: Bearer {{token}}
@@ -154,6 +155,7 @@ Content-Type: application/json
 
 {
   "name": "Simple Salmon Dinner",
+  "tags": ["lock in"],
   "ingredients": [
     {
       "food_id": 5,
@@ -198,12 +200,52 @@ Content-Type: application/json
 
 ###
 
+### Create Recipe 5 - Burger & Fries (with "going out" tag)
+POST http://localhost:8080/recipes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Burger & Fries",
+  "tags": ["going out"],
+  "ingredients": [
+    {
+      "food_id": 1,
+      "quantity_grams": 200
+    },
+    {
+      "food_id": 2,
+      "quantity_grams": 150
+    }
+  ]
+}
+
+###
+
 ###############################################
 ### 2. READ RECIPES
 ###############################################
 
 ### Get all user's recipes (Protected)
 GET http://localhost:8080/recipes
+Authorization: Bearer {{token}}
+
+###
+
+### Get recipes filtered by "lock in" tag (Protected)
+GET http://localhost:8080/recipes?tags=lock in
+Authorization: Bearer {{token}}
+
+###
+
+### Get recipes filtered by "going out" tag (Protected)
+GET http://localhost:8080/recipes?tags=going out
+Authorization: Bearer {{token}}
+
+###
+
+### Get recipes filtered by multiple tags (lock in OR going out)
+GET http://localhost:8080/recipes?tags=lock in,going out
 Authorization: Bearer {{token}}
 
 ###
@@ -253,13 +295,14 @@ Content-Type: application/json
 
 ###
 
-### Update recipe (only name)
+### Update recipe with tags (Protected)
 PUT http://localhost:8080/recipes/2
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Deluxe Salmon Dinner"
+  "name": "Deluxe Salmon Dinner",
+  "tags": ["lock in", "healthy"]
 }
 
 ###

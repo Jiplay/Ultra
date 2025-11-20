@@ -69,6 +69,7 @@ func (h *Handler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 	recipe := &Recipe{
 		Name:   req.Name,
 		UserID: &userID,
+		Tags:   req.Tags,
 	}
 
 	if err := h.repo.Create(recipe); err != nil {
@@ -147,6 +148,7 @@ func (h *Handler) GetRecipe(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListRecipes handles GET /recipes (Protected)
+// Supports optional query parameters: ?user_only=true and ?tags=tag1,tag2 to filter by tags
 func (h *Handler) ListRecipes(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
@@ -162,8 +164,19 @@ func (h *Handler) ListRecipes(w http.ResponseWriter, r *http.Request) {
 	userOnlyParam := r.URL.Query().Get("user_only")
 	userOnly := userOnlyParam == "true"
 
+	// Parse tags query parameter
+	var tags []string
+	tagsParam := r.URL.Query().Get("tags")
+	if tagsParam != "" {
+		tags = strings.Split(tagsParam, ",")
+		// Trim whitespace from each tag
+		for i := range tags {
+			tags[i] = strings.TrimSpace(tags[i])
+		}
+	}
+
 	// Get recipes with nutrition and ingredient details
-	recipes, err := h.repo.GetByUserIDWithNutrition(userID, userOnly, h.foodRepo)
+	recipes, err := h.repo.GetByUserIDWithNutrition(userID, userOnly, tags, h.foodRepo)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -220,6 +233,9 @@ func (h *Handler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 	// Update fields
 	if req.Name != "" {
 		recipe.Name = req.Name
+	}
+	if req.Tags != nil {
+		recipe.Tags = req.Tags
 	}
 
 	if err := h.repo.Update(recipe); err != nil {

@@ -14,6 +14,7 @@ type Recipe struct {
 	DeletedAt   gorm.DeletedAt     `json:"deleted_at,omitempty" gorm:"index"`
 	Name        string             `json:"name" gorm:"type:varchar(255);not null"`
 	UserID      *uint              `json:"user_id,omitempty" gorm:"index"` // NULL = global recipe
+	Tags        []string           `json:"tags,omitempty" gorm:"type:text[]"`
 	Ingredients []RecipeIngredient `json:"ingredients,omitempty" gorm:"foreignKey:RecipeID;constraint:OnDelete:CASCADE"`
 }
 
@@ -31,6 +32,7 @@ type RecipeIngredient struct {
 // CreateRecipeRequest represents the request to create a recipe
 type CreateRecipeRequest struct {
 	Name        string                    `json:"name"`
+	Tags        []string                  `json:"tags,omitempty"`
 	Ingredients []CreateIngredientRequest `json:"ingredients"`
 }
 
@@ -42,7 +44,8 @@ type CreateIngredientRequest struct {
 
 // UpdateRecipeRequest represents the request to update a recipe
 type UpdateRecipeRequest struct {
-	Name string `json:"name"`
+	Name string   `json:"name"`
+	Tags []string `json:"tags,omitempty"`
 }
 
 // AddIngredientRequest represents the request to add an ingredient to a recipe
@@ -92,6 +95,7 @@ type RecipeListResponse struct {
 	UpdatedAt       time.Time               `json:"updated_at"`
 	Name            string                  `json:"name"`
 	UserID          *uint                   `json:"user_id,omitempty"`
+	Tags            []string                `json:"tags,omitempty"`
 	TotalWeight     float64                 `json:"total_weight"`
 	TotalCalories   float64                 `json:"total_calories"`
 	TotalProtein    float64                 `json:"total_protein"`

@@ -6,7 +6,7 @@ GET http://localhost:8080/health
 
 @token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2LCJlbWFpbCI6ImRpZXQtdGVzdEBleGFtcGxlLmNvbSIsImV4cCI6MTc2MjYwMzg4MiwiaWF0IjoxNzYyNTE3NDgyfQ.ytlgCe89Q4Gnc56WgcM8UMl-XnuUK3InfSRiXxw_CaU
 
-### Create Food - Chicken Breast
+### Create Food - Chicken Breast (with tags)
 POST http://localhost:8080/foods
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -18,12 +18,13 @@ Content-Type: application/json
   "protein": 31,
   "carbs": 0,
   "fat": 3.6,
-  "fiber": 0
+  "fiber": 0,
+  "tags": ["lock in"]
 }
 
 ###
 
-### Create Food - Brown Rice
+### Create Food - Brown Rice (with tags)
 POST http://localhost:8080/foods
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -35,7 +36,8 @@ Content-Type: application/json
   "protein": 5,
   "carbs": 45,
   "fat": 1.8,
-  "fiber": 3.5
+  "fiber": 3.5,
+  "tags": ["lock in"]
 }
 
 ###
@@ -91,8 +93,62 @@ Content-Type: application/json
 
 ###
 
+### Create Food - Pizza (going out tag)
+POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Pizza",
+  "description": "Margherita pizza slice",
+  "calories": 266,
+  "protein": 11,
+  "carbs": 33,
+  "fat": 10,
+  "fiber": 2.5,
+  "tags": ["going out"]
+}
+
+###
+
+### Create Food - Burger (going out tag)
+POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Burger",
+  "description": "Classic beef burger with bun",
+  "calories": 354,
+  "protein": 20,
+  "carbs": 33,
+  "fat": 16,
+  "fiber": 2,
+  "tags": ["going out"]
+}
+
+###
+
 ### Get All Foods
 GET http://localhost:8080/foods
+Authorization: Bearer {{token}}
+
+###
+
+### Get Foods filtered by "lock in" tag
+GET http://localhost:8080/foods?tags=lock in
+Authorization: Bearer {{token}}
+
+###
+
+### Get Foods filtered by "going out" tag
+GET http://localhost:8080/foods?tags=going out
+Authorization: Bearer {{token}}
+
+###
+
+### Get Foods filtered by multiple tags (lock in OR going out)
+GET http://localhost:8080/foods?tags=lock in,going out
 Authorization: Bearer {{token}}
 
 ###
