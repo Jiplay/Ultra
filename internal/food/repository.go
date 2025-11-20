@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -61,7 +62,7 @@ func (r *Repository) GetAll(tags []string) ([]Food, error) {
 
 	// Filter by tags if provided (foods with any of the specified tags)
 	if len(tags) > 0 {
-		query = query.Where("tags && ?", tags)
+		query = query.Where("tags && ?", pq.Array(tags))
 	}
 
 	result := query.Find(&foods)
