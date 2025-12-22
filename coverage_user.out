@@ -1,0 +1,25 @@
+mode: set
+ultra-bis/internal/user/model.go:80.52,82.16 2 1
+ultra-bis/internal/user/model.go:82.16,84.3 1 0
+ultra-bis/internal/user/model.go:85.2,86.12 2 1
+ultra-bis/internal/user/model.go:90.52,93.2 2 1
+ultra-bis/internal/user/repository.go:16.45,18.2 1 1
+ultra-bis/internal/user/repository.go:21.47,23.25 2 1
+ultra-bis/internal/user/repository.go:23.25,25.3 1 1
+ultra-bis/internal/user/repository.go:26.2,26.12 1 1
+ultra-bis/internal/user/repository.go:30.54,34.53 3 1
+ultra-bis/internal/user/repository.go:34.53,36.3 1 1
+ultra-bis/internal/user/repository.go:37.2,37.25 1 1
+ultra-bis/internal/user/repository.go:37.25,39.3 1 0
+ultra-bis/internal/user/repository.go:41.2,41.19 1 1
+ultra-bis/internal/user/repository.go:45.62,49.53 3 1
+ultra-bis/internal/user/repository.go:49.53,51.3 1 1
+ultra-bis/internal/user/repository.go:52.2,52.25 1 1
+ultra-bis/internal/user/repository.go:52.25,54.3 1 0
+ultra-bis/internal/user/repository.go:56.2,56.19 1 1
+ultra-bis/internal/user/repository.go:60.47,62.25 2 1
+ultra-bis/internal/user/repository.go:62.25,64.3 1 0
+ultra-bis/internal/user/repository.go:65.2,65.12 1 1
+ultra-bis/internal/user/repository.go:69.62,72.25 3 1
+ultra-bis/internal/user/repository.go:72.25,74.3 1 0
+ultra-bis/internal/user/repository.go:75.2,75.23 1 1

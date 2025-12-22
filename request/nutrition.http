@@ -5,14 +5,14 @@
 ### 1. AUTHENTICATION
 ###############################################
 
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo4LCJlbWFpbCI6ImF0aGxldGUyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzY1MzY5NDg4LCJpYXQiOjE3NjI3Nzc0ODh9.NBvVDH0hrJRPp1Ea7XXoMNVtPGaEDlCbGkOfpLgECms
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2LCJlbWFpbCI6ImRpZXQtdGVzdEBleGFtcGxlLmNvbSIsImV4cCI6MTc2ODI5OTkyNSwiaWF0IjoxNzY1NzA3OTI1fQ.b2NKXUALmCQhdhvIT_Y6Hu3OJbnOtOU4Mtph7ELtVBI
 
 ### Register new user
 POST http://localhost:8080/auth/register
 Content-Type: application/json
 
 {
-  "email": "athlete2@example.com",
+  "email": "athlete@example.com",
   "password": "password123",
   "name": "John Athlete"
 }
@@ -174,6 +174,272 @@ Content-Type: application/json
   "fat": 77,
   "fiber": 32
 }
+
+###
+
+###############################################
+### 3.5. DIET CALCULATIONS & PROTOCOL TRACKING
+###############################################
+
+### Get available diet models and protocols
+GET http://localhost:8080/goals/diets
+Authorization: Bearer {{token}}
+
+###
+
+###############################################
+### PROTOCOL 1: Clean Muscle Building (3 phases)
+###############################################
+
+### Step 1: Calculate to see all 3 phases
+POST http://localhost:8080/goals/calculate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "diet_model": "zeroToHero",
+  "protocol": 1
+}
+
+###
+
+### Step 2a: Create goal from Phase 1 (Maintenance)
+### Copy nutrition values from phase 1 in the calculate response
+POST http://localhost:8080/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "calories": 2684,
+  "protein": 134,
+  "carbs": 312,
+  "fat": 74,
+  "fiber": 38,
+  "start_date": "2025-01-15",
+  "diet_model": "zeroToHero",
+  "protocol": 1,
+  "phase": 1
+}
+
+###
+
+### Step 2b: Later, create goal from Phase 2 (Moderate Surplus +200 cal)
+### Copy nutrition values from phase 2 in the calculate response
+POST http://localhost:8080/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "calories": 2884,
+  "protein": 134,
+  "carbs": 362,
+  "fat": 74,
+  "fiber": 40,
+  "start_date": "2025-02-01",
+  "diet_model": "zeroToHero",
+  "protocol": 1,
+  "phase": 2
+}
+
+###
+
+### Step 2c: Later, create goal from Phase 3 (High Surplus +400 cal)
+### Copy nutrition values from phase 3 in the calculate response
+POST http://localhost:8080/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "calories": 3084,
+  "protein": 134,
+  "carbs": 412,
+  "fat": 74,
+  "fiber": 43,
+  "start_date": "2025-03-01",
+  "diet_model": "zeroToHero",
+  "protocol": 1,
+  "phase": 3
+}
+
+###
+
+###############################################
+### PROTOCOL 2: Recomposition (1 phase)
+###############################################
+
+### Step 1: Calculate to see phase
+POST http://localhost:8080/goals/calculate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "diet_model": "zeroToHero",
+  "protocol": 2
+}
+
+###
+
+### Step 2: Create goal from Phase 1 (Recomposition -300 cal)
+POST http://localhost:8080/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "calories": 2384,
+  "protein": 134,
+  "carbs": 262,
+  "fat": 74,
+  "fiber": 33,
+  "start_date": "2025-01-15",
+  "diet_model": "zeroToHero",
+  "protocol": 2,
+  "phase": 1
+}
+
+###
+
+###############################################
+### PROTOCOL 3: Perfect Deficit (2 phases)
+###############################################
+
+### Step 1: Calculate to see both phases
+POST http://localhost:8080/goals/calculate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "diet_model": "zeroToHero",
+  "protocol": 3
+}
+
+###
+
+### Step 2a: Create goal from Phase 1 (Moderate Deficit -300 cal)
+POST http://localhost:8080/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "calories": 2384,
+  "protein": 134,
+  "carbs": 262,
+  "fat": 74,
+  "fiber": 33,
+  "start_date": "2025-01-15",
+  "diet_model": "zeroToHero",
+  "protocol": 3,
+  "phase": 1
+}
+
+###
+
+### Step 2b: Later, create goal from Phase 2 (Higher Deficit -500 cal)
+POST http://localhost:8080/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "calories": 2184,
+  "protein": 134,
+  "carbs": 212,
+  "fat": 74,
+  "fiber": 31,
+  "start_date": "2025-02-15",
+  "diet_model": "zeroToHero",
+  "protocol": 3,
+  "phase": 2
+}
+
+###
+
+###############################################
+### PROTOCOL 4: Progressive Fat Loss (3 phases)
+###############################################
+
+### Step 1: Calculate to see all 3 phases
+POST http://localhost:8080/goals/calculate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "diet_model": "zeroToHero",
+  "protocol": 4
+}
+
+###
+
+### Step 2a: Create goal from Phase 1 (Initial Deficit -300 cal)
+POST http://localhost:8080/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "calories": 2384,
+  "protein": 134,
+  "carbs": 262,
+  "fat": 74,
+  "fiber": 33,
+  "start_date": "2025-01-15",
+  "diet_model": "zeroToHero",
+  "protocol": 4,
+  "phase": 1
+}
+
+###
+
+### Step 2b: Later, create goal from Phase 2 (Moderate Deficit -500 cal)
+POST http://localhost:8080/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "calories": 2184,
+  "protein": 134,
+  "carbs": 212,
+  "fat": 74,
+  "fiber": 31,
+  "start_date": "2025-02-15",
+  "diet_model": "zeroToHero",
+  "protocol": 4,
+  "phase": 2
+}
+
+###
+
+### Step 2c: Later, create goal from Phase 3 (Aggressive Deficit -700 cal)
+POST http://localhost:8080/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "calories": 1984,
+  "protein": 134,
+  "carbs": 162,
+  "fat": 74,
+  "fiber": 28,
+  "start_date": "2025-03-15",
+  "diet_model": "zeroToHero",
+  "protocol": 4,
+  "phase": 3
+}
+
+###
+
+###############################################
+### VERIFY PROTOCOL TRACKING
+###############################################
+
+### Get active goal - Should include protocol tracking with phase
+### Expected fields: diet_model, protocol, phase, expiration_date (2 weeks from creation)
+GET http://localhost:8080/goals
+Authorization: Bearer {{token}}
+
+###
+
+### Get all goals - Shows protocol tracking for all goals
+### Manual goals have null protocol fields, calculated goals have diet_model, protocol, phase, expiration_date
+GET http://localhost:8080/goals/all
+Authorization: Bearer {{token}}
 
 ###
 

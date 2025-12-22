@@ -1,13 +1,13 @@
 ### Zero to Hero Diet Calculator Testing
 
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2LCJlbWFpbCI6ImRpZXQtdGVzdEBleGFtcGxlLmNvbSIsImV4cCI6MTc2MjIwMjk2MSwiaWF0IjoxNzYyMTE2NTYxfQ.tPpQAtaHHwPN0r1UYovJzWQ8ZjLecc4upzlfTtmToVs
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2LCJlbWFpbCI6ImRpZXQtdGVzdEBleGFtcGxlLmNvbSIsImV4cCI6MTc2ODkyNTI2MCwiaWF0IjoxNzY2MzMzMjYwfQ.nF1dBB57626ntHMlo8ImIJecEWipRIpksae3YadxL_g
 
 ### 1. Register a new user
 POST http://localhost:8080/auth/register
 Content-Type: application/json
 
 {
-  "email": "diet-test@example.com",
+  "email": "diet-test1@example.com",
   "password": "password123",
   "name": "Diet Test User"
 }
@@ -23,6 +23,10 @@ Content-Type: application/json
 
 ### 3. Get available diets and protocols
 GET http://localhost:8080/goals/diets
+Authorization: Bearer {{token}}
+
+### X. Get active goal
+GET http://localhost:8080/goals
 Authorization: Bearer {{token}}
 
 ### 4. Get current user profile
@@ -54,7 +58,7 @@ Content-Type: application/json
 
 {
   "diet_model": "zeroToHero",
-  "protocol": 3
+  "protocol": 1
 }
 
 ### 7. Calculate diet - Protocol 2 (Recomposition)
@@ -97,12 +101,13 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "calories": 2384,
-  "protein": 134,
-  "carbs": 312,
+  "calories": 2600,
+  "protein": 117,
+  "carbs": 366,
   "fat": 74,
-  "fiber": 33,
-  "start_date": "2025-01-15"
+  "diet_model": "zeroToHero",
+  "protocol": 1,
+  "phase": 1
 }
 
 ### 11. Test with missing profile data (should return error)

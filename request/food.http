@@ -4,7 +4,7 @@ GET http://localhost:8080/health
 ###
 
 
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2LCJlbWFpbCI6ImRpZXQtdGVzdEBleGFtcGxlLmNvbSIsImV4cCI6MTc2MjYwMzg4MiwiaWF0IjoxNzYyNTE3NDgyfQ.ytlgCe89Q4Gnc56WgcM8UMl-XnuUK3InfSRiXxw_CaU
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2LCJlbWFpbCI6ImRpZXQtdGVzdEBleGFtcGxlLmNvbSIsImV4cCI6MTc2ODkyNTI2MCwiaWF0IjoxNzY2MzMzMjYwfQ.nF1dBB57626ntHMlo8ImIJecEWipRIpksae3YadxL_g
 
 ### Create Food - Chicken Breast
 POST http://localhost:8080/foods
@@ -249,7 +249,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "food_id": 1,
+  "food_id": 51,
   "date": "2025-01-15",
   "meal_type": "breakfast",
   "quantity_grams": 30,
@@ -263,3 +263,5 @@ GET http://localhost:8080/diary/summary/2025-01-15
 Authorization: Bearer {{token}}
 
 ###
+DELETE http://localhost:8080/diary/entries/66
+Authorization: Bearer {{token}}

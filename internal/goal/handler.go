@@ -82,6 +82,17 @@ func (h *Handler) CreateGoal(w http.ResponseWriter, r *http.Request) {
 		IsActive:  true,
 	}
 
+	// Add protocol tracking if provided
+	if req.DietModel != nil && req.Protocol != nil {
+		now := time.Now()
+		expirationDate := now.AddDate(0, 0, 14) // 2 weeks from creation
+
+		goal.DietModel = req.DietModel
+		goal.Protocol = req.Protocol
+		goal.Phase = req.Phase // May be nil if not provided
+		goal.ExpirationDate = &expirationDate
+	}
+
 	if err := h.repo.Create(goal); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

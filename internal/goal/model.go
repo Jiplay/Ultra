@@ -54,6 +54,11 @@ type NutritionGoal struct {
 	StartDate time.Time      `json:"start_date" gorm:"not null"`
 	EndDate   *time.Time     `json:"end_date"`
 	IsActive  bool           `json:"is_active" gorm:"default:true;index"`
+	// Protocol tracking fields
+	DietModel      *string    `json:"diet_model,omitempty" gorm:"type:varchar(50);index"`
+	Protocol       *int       `json:"protocol,omitempty" gorm:"index"`
+	Phase          *int       `json:"phase,omitempty" gorm:"index"`
+	ExpirationDate *time.Time `json:"expiration_date,omitempty"`
 }
 
 // CreateGoalRequest represents the request to create a nutrition goal
@@ -65,6 +70,11 @@ type CreateGoalRequest struct {
 	Fiber     float64 `json:"fiber"`
 	StartDate Date    `json:"start_date"`
 	EndDate   *Date   `json:"end_date,omitempty"`
+
+	// Optional protocol tracking - only populated when creating from calculation
+	DietModel *string `json:"diet_model,omitempty"`
+	Protocol  *int    `json:"protocol,omitempty"`
+	Phase     *int    `json:"phase,omitempty"`
 }
 
 // UpdateGoalRequest represents the request to update a nutrition goal

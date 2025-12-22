@@ -5,7 +5,7 @@
 ### AUTHENTICATION (Get Token First)
 ###############################################
 
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6ImF0aGxldGVAZXhhbXBsZS5jb20iLCJleHAiOjE3NjI2ODYxMDcsImlhdCI6MTc2MjU5OTcwN30.QfNXq80d5Od2KFMvuVhhWGb_rFR3QedsV1TDK3MXE0o
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2LCJlbWFpbCI6ImRpZXQtdGVzdEBleGFtcGxlLmNvbSIsImV4cCI6MTc2ODkyNTI2MCwiaWF0IjoxNzY2MzMzMjYwfQ.nF1dBB57626ntHMlo8ImIJecEWipRIpksae3YadxL_g
 @tokenJulien=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJlbWFpbCI6Imp1anVnYXJzaWFAZ21haWwuY29tIiwiZXhwIjoxNzYyNjkxNjAyLCJpYXQiOjE3NjI2MDUyMDJ9.NsLInoZW6RJr1yrMkf10X2liO_raEqAosjfDJ2wSdYU
 ### Login
 POST http://localhost:8080/auth/login
@@ -52,7 +52,7 @@ Content-Type: application/json
 
 {
   "date": "2025-01-15",
-  "weight": 75.2
+  "weight": 73.2
 }
 
 ###
@@ -98,7 +98,6 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "date": "2025-01-12",
   "weight": 75.5
 }
 
@@ -117,7 +116,7 @@ Authorization: Bearer {{token}}
 
 ### Get latest body metric (Protected)
 ### Returns the most recent entry
-GET http://localhost:8080/metrics/latest
+GET http://localhost:8080/metrics/date/2025-12-21
 Authorization: Bearer {{token}}
 
 ###

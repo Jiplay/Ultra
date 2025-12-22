@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"strconv"
@@ -173,6 +174,7 @@ func (h *Handler) GetWeekly(w http.ResponseWriter, r *http.Request) {
 
 // GetByDate handles GET /metrics/date/{date}
 func (h *Handler) GetByDate(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Date : " + r.URL.String())
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return

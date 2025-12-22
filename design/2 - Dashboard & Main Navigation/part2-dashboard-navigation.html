@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FORGE — Part 2: Dashboard & Navigation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="part2-styles.css">
+</head>
+<body>
+  <div class="showcase">
+    <!-- Header -->
+    <header class="showcase-header">
+      <h1>FORGE</h1>
+      <p>Part 2: Dashboard & Main Navigation</p>
+    </header>
+
+    <!-- Phone Mockups -->
+    <div class="phones-container">
+      
+      <!-- Dashboard Screen -->
+      <div class="phone-wrapper">
+        <span class="phone-label">Dashboard / Home</span>
+        <div class="phone">
+          <div class="phone-screen">
+            
+            <!-- Status Bar -->
+            <div class="status-bar">
+              <span class="status-time">9:41</span>
+              <div class="status-icons">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C7.46 3 3.34 4.78.29 7.67c-.18.18-.29.43-.29.71 0 .28.11.53.29.71l11 11c.39.39 1.02.39 1.41 0l11-11c.18-.18.29-.43.29-.71 0-.28-.11-.53-.29-.71C20.66 4.78 16.54 3 12 3z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M2 22h20V2z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 4h-3V2h-4v2H7v18h10V4z"/></svg>
+              </div>
+            </div>
+            
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+              <div class="dashboard-header-top">
+                <div class="dashboard-greeting">
+                  <span class="dashboard-greeting-text">Good morning</span>
+                  <span class="dashboard-greeting-name">JULIEN</span>
+                </div>
+                <div class="dashboard-header-actions">
+                  <button class="header-action-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                    <span class="notification-dot"></span>
+                  </button>
+                  <button class="header-action-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Date Selector -->
+              <div class="date-selector">
+                <button class="date-nav-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+                <div class="date-display">
+                  <div class="date-display-day">Friday</div>
+                  <div class="date-display-full">November 28, 2025</div>
+                </div>
+                <span class="date-today-badge">Today</span>
+                <button class="date-nav-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+              
+              <!-- Calories Ring Card -->
+              <div class="calories-card">
+                <div class="calories-card-header">
+                  <span class="calories-card-title">Daily Calories</span>
+                  <button class="calories-card-action">
+                    Details
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                </div>
+                <div class="calories-ring-container">
+                  <div class="calories-ring">
+                    <svg viewBox="0 0 140 140">
+                      <circle class="calories-ring-bg" cx="70" cy="70" r="60"/>
+                      <circle class="calories-ring-progress" cx="70" cy="70" r="60"/>
+                    </svg>
+                    <div class="calories-ring-center">
+                      <div class="calories-ring-value">1,847</div>
+                      <div class="calories-ring-label">remaining</div>
+                    </div>
+                  </div>
+                  <div class="calories-breakdown">
+                    <div class="calories-breakdown-item">
+                      <div class="breakdown-color consumed"></div>
+                      <div class="breakdown-info">
+                        <div class="breakdown-label">Consumed</div>
+                        <div class="breakdown-value">803</div>
+                      </div>
+                    </div>
+                    <div class="calories-breakdown-item">
+                      <div class="breakdown-color burned"></div>
+                      <div class="breakdown-info">
+                        <div class="breakdown-label">Burned</div>
+                        <div class="breakdown-value">245</div>
+                      </div>
+                    </div>
+                    <div class="calories-breakdown-item">
+                      <div class="breakdown-color remaining"></div>
+                      <div class="breakdown-info">
+                        <div class="breakdown-label">Target</div>
+                        <div class="breakdown-value">2,650</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Macros Row -->
+              <div class="macros-row">
+                <div class="macro-card">
+                  <div class="macro-icon protein">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 2H8.6c-.4 0-.8.2-1.1.5-.3.3-.5.7-.5 1.1v12.8c0 .4.2.8.5 1.1.3.3.7.5 1.1.5h9.8c.4 0 .8-.2 1.1-.5.3-.3.5-.7.5-1.1V6.5L15.5 2z"/><path d="M3 7.6v12.8c0 .4.2.8.5 1.1.3.3.7.5 1.1.5h9.8"/><path d="M15 2v5h5"/></svg>
+                  </div>
+                  <div class="macro-value">62g</div>
+                  <div class="macro-label">Protein</div>
+                  <div class="macro-progress">
+                    <div class="macro-progress-fill protein" style="width: 34%;"></div>
+                  </div>
+                  <div class="macro-target">/ 180g</div>
+                </div>
+                <div class="macro-card">
+                  <div class="macro-icon carbs">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/></svg>
+                  </div>
+                  <div class="macro-value">98g</div>
+                  <div class="macro-label">Carbs</div>
+                  <div class="macro-progress">
+                    <div class="macro-progress-fill carbs" style="width: 34%;"></div>
+                  </div>
+                  <div class="macro-target">/ 290g</div>
+                </div>
+                <div class="macro-card">
+                  <div class="macro-icon fats">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+                  </div>
+                  <div class="macro-value">28g</div>
+                  <div class="macro-label">Fats</div>
+                  <div class="macro-progress">
+                    <div class="macro-progress-fill fats" style="width: 33%;"></div>
+                  </div>
+                  <div class="macro-target">/ 85g</div>
+                </div>
+              </div>
+              
+              <!-- Today's Workout Card -->
+              <div class="workout-card">
+                <div class="workout-card-header">
+                  <div class="workout-card-title-group">
+                    <span class="workout-card-label">Today's Workout</span>
+                    <span class="workout-card-title">UPPER BODY PUSH</span>
+                  </div>
+                  <span class="workout-card-badge">Day 3 of 4</span>
+                </div>
+                <div class="workout-card-meta">
+                  <div class="workout-meta-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>~55 min</span>
+                  </div>
+                  <div class="workout-meta-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>
+                    <span>6 exercises</span>
+                  </div>
+                  <div class="workout-meta-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                    <span>18 sets</span>
+                  </div>
+                </div>
+                <div class="workout-exercises-preview">
+                  <div class="exercise-preview-item">
+                    <span class="exercise-preview-number">1</span>
+                    <div class="exercise-preview-info">
+                      <div class="exercise-preview-name">Bench Press</div>
+                      <div class="exercise-preview-sets">4 sets × 6-8 reps</div>
+                    </div>
+                  </div>
+                  <div class="exercise-preview-item">
+                    <span class="exercise-preview-number">2</span>
+                    <div class="exercise-preview-info">
+                      <div class="exercise-preview-name">Overhead Press</div>
+                      <div class="exercise-preview-sets">3 sets × 8-10 reps</div>
+                    </div>
+                  </div>
+                  <div class="exercise-preview-more">+4 more exercises</div>
+                </div>
+                <div class="workout-card-actions">
+                  <button class="workout-btn-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Start Workout
+                  </button>
+                  <button class="workout-btn-preview">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Weekly Streak -->
+              <div class="streak-card">
+                <div class="streak-header">
+                  <span class="streak-title">Weekly Streak</span>
+                  <span class="streak-count">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+                    5 day streak
+                  </span>
+                </div>
+                <div class="streak-days">
+                  <div class="streak-day completed">
+                    <span class="streak-day-label">Mon</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                  <div class="streak-day completed">
+                    <span class="streak-day-label">Tue</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                  <div class="streak-day completed">
+                    <span class="streak-day-label">Wed</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                  <div class="streak-day completed">
+                    <span class="streak-day-label">Thu</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                  <div class="streak-day today">
+                    <span class="streak-day-label">Fri</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                  <div class="streak-day">
+                    <span class="streak-day-label">Sat</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                  <div class="streak-day">
+                    <span class="streak-day-label">Sun</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+            </div>
+            
+            <!-- Bottom Navigation -->
+            <nav class="bottom-nav">
+              <button class="nav-item active">
+                <svg class="nav-item-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span class="nav-item-label">Home</span>
+              </button>
+              <button class="nav-item">
+                <svg class="nav-item-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>
+                <span class="nav-item-label">Workout</span>
+              </button>
+              <div class="nav-fab">
+                <button class="nav-fab-button">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                </button>
+              </div>
+              <button class="nav-item">
+                <svg class="nav-item-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                <span class="nav-item-label">Progress</span>
+              </button>
+              <button class="nav-item">
+                <svg class="nav-item-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                <span class="nav-item-label">Learn</span>
+              </button>
+            </nav>
+            
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Dashboard with Meals Expanded -->
+      <div class="phone-wrapper">
+        <span class="phone-label">Dashboard (scrolled)</span>
+        <div class="phone">
+          <div class="phone-screen">
+            
+            <!-- Status Bar -->
+            <div class="status-bar">
+              <span class="status-time">9:41</span>
+              <div class="status-icons">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C7.46 3 3.34 4.78.29 7.67c-.18.18-.29.43-.29.71 0 .28.11.53.29.71l11 11c.39.39 1.02.39 1.41 0l11-11c.18-.18.29-.43.29-.71 0-.28-.11-.53-.29-.71C20.66 4.78 16.54 3 12 3z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M2 22h20V2z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 4h-3V2h-4v2H7v18h10V4z"/></svg>
+              </div>
+            </div>
+            
+            <!-- Dashboard Header (compact when scrolled) -->
+            <div class="dashboard-header">
+              <div class="dashboard-header-top">
+                <div class="dashboard-greeting">
+                  <span class="dashboard-greeting-text">Good morning</span>
+                  <span class="dashboard-greeting-name">JULIEN</span>
+                </div>
+                <div class="dashboard-header-actions">
+                  <button class="header-action-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                    <span class="notification-dot"></span>
+                  </button>
+                  <button class="header-action-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Date Selector -->
+              <div class="date-selector">
+                <button class="date-nav-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+                <div class="date-display">
+                  <div class="date-display-day">Friday</div>
+                  <div class="date-display-full">November 28, 2025</div>
+                </div>
+                <span class="date-today-badge">Today</span>
+                <button class="date-nav-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Dashboard Content (scrolled to meals) -->
+            <div class="dashboard-content">
+              
+              <!-- Quick Actions -->
+              <div class="quick-actions">
+                <div class="quick-actions-title">Quick Add</div>
+                <div class="quick-actions-grid">
+                  <button class="quick-action-btn">
+                    <div class="quick-action-icon meal">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+                    </div>
+                    <span class="quick-action-label">Meal</span>
+                  </button>
+                  <button class="quick-action-btn">
+                    <div class="quick-action-icon water">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+                    </div>
+                    <span class="quick-action-label">Water</span>
+                  </button>
+                  <button class="quick-action-btn">
+                    <div class="quick-action-icon weight">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M6.5 8a2 2 0 0 0-1.905 1.46L2.1 18.5A2 2 0 0 0 4 21h16a2 2 0 0 0 1.925-2.54L19.4 9.5A2 2 0 0 0 17.48 8Z"/></svg>
+                    </div>
+                    <span class="quick-action-label">Weight</span>
+                  </button>
+                  <button class="quick-action-btn">
+                    <div class="quick-action-icon photo">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                    </div>
+                    <span class="quick-action-label">Photo</span>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Meals Section -->
+              <div class="meals-section">
+                <div class="meals-header">
+                  <span class="meals-title">Today's Meals</span>
+                  <button class="meals-add-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    Add Food
+                  </button>
+                </div>
+                
+                <!-- Breakfast - has food -->
+                <div class="meal-slot has-food">
+                  <div class="meal-slot-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" x2="6" y1="1" y2="4"/><line x1="10" x2="10" y1="1" y2="4"/><line x1="14" x2="14" y1="1" y2="4"/></svg>
+                  </div>
+                  <div class="meal-slot-info">
+                    <div class="meal-slot-name">Breakfast</div>
+                    <div class="meal-slot-detail">Oatmeal, eggs, banana</div>
+                  </div>
+                  <div class="meal-slot-calories">
+                    <div class="meal-slot-cal-value">485</div>
+                    <div class="meal-slot-cal-label">kcal</div>
+                  </div>
+                </div>
+                
+                <!-- Lunch - has food -->
+                <div class="meal-slot has-food">
+                  <div class="meal-slot-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+                  </div>
+                  <div class="meal-slot-info">
+                    <div class="meal-slot-name">Lunch</div>
+                    <div class="meal-slot-detail">Chicken salad, rice</div>
+                  </div>
+                  <div class="meal-slot-calories">
+                    <div class="meal-slot-cal-value">318</div>
+                    <div class="meal-slot-cal-label">kcal</div>
+                  </div>
+                </div>
+                
+                <!-- Dinner - empty -->
+                <div class="meal-slot">
+                  <div class="meal-slot-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"/><path d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"/><path d="m4 8 16-4"/><path d="m8.86 6.78-.45-1.81a2 2 0 0 1 1.45-2.43l1.94-.48a2 2 0 0 1 2.43 1.46l.45 1.8"/></svg>
+                  </div>
+                  <div class="meal-slot-info">
+                    <div class="meal-slot-name">Dinner</div>
+                    <div class="meal-slot-detail">Tap to add food</div>
+                  </div>
+                  <div class="meal-slot-add">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                  </div>
+                </div>
+                
+                <!-- Snacks - empty -->
+                <div class="meal-slot">
+                  <div class="meal-slot-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21h10"/><path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9Z"/><path d="M11.38 12a2.4 2.4 0 0 1-.4-4.77 2.4 2.4 0 0 1 3.2-2.77 2.4 2.4 0 0 1 3.47-.63 2.4 2.4 0 0 1 3.37 3.37 2.4 2.4 0 0 1-1.1 3.7 2.51 2.51 0 0 1 .03 1.1"/><path d="m13 12 4-4"/><path d="M10.9 7.25A2.4 2.4 0 0 0 8 5a2.4 2.4 0 0 0-3 2.33V8"/></svg>
+                  </div>
+                  <div class="meal-slot-info">
+                    <div class="meal-slot-name">Snacks</div>
+                    <div class="meal-slot-detail">Tap to add food</div>
+                  </div>
+                  <div class="meal-slot-add">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Weekly Streak -->
+              <div class="streak-card">
+                <div class="streak-header">
+                  <span class="streak-title">Weekly Streak</span>
+                  <span class="streak-count">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+                    5 day streak
+                  </span>
+                </div>
+                <div class="streak-days">
+                  <div class="streak-day completed">
+                    <span class="streak-day-label">Mon</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                  <div class="streak-day completed">
+                    <span class="streak-day-label">Tue</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                  <div class="streak-day completed">
+                    <span class="streak-day-label">Wed</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                  <div class="streak-day completed">
+                    <span class="streak-day-label">Thu</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                  <div class="streak-day today">
+                    <span class="streak-day-label">Fri</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                  <div class="streak-day">
+                    <span class="streak-day-label">Sat</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                  <div class="streak-day">
+                    <span class="streak-day-label">Sun</span>
+                    <div class="streak-day-dot">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+            </div>
+            
+            <!-- Bottom Navigation -->
+            <nav class="bottom-nav">
+              <button class="nav-item active">
+                <svg class="nav-item-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span class="nav-item-label">Home</span>
+              </button>
+              <button class="nav-item">
+                <svg class="nav-item-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>
+                <span class="nav-item-label">Workout</span>
+              </button>
+              <div class="nav-fab">
+                <button class="nav-fab-button">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                </button>
+              </div>
+              <button class="nav-item">
+                <svg class="nav-item-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                <span class="nav-item-label">Progress</span>
+              </button>
+              <button class="nav-item">
+                <svg class="nav-item-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                <span class="nav-item-label">Learn</span>
+              </button>
+            </nav>
+            
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</body>
+</html>
