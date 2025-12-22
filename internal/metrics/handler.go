@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"ultra-bis/internal/httputil"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -20,45 +21,29 @@ func NewHandler(repo *Repository) *Handler {
 	return &Handler{repo: repo}
 }
 
-// ErrorResponse represents an error response
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
-
-// writeJSON writes a JSON response
-func writeJSON(w http.ResponseWriter, status int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
-}
-
-// writeError writes an error response
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, ErrorResponse{Error: message})
-}
 
 // CreateMetric handles POST /metrics
 func (h *Handler) CreateMetric(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	var req CreateMetricRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid request body")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Validate weight
 	if req.Weight <= 0 {
-		writeError(w, http.StatusBadRequest, "Weight must be greater than 0")
+		httputil.WriteError(w, http.StatusBadRequest, "Weight must be greater than 0")
 		return
 	}
 
@@ -70,7 +55,7 @@ func (h *Handler) CreateMetric(w http.ResponseWriter, r *http.Request) {
 		var err error
 		metricDate, err = time.Parse("2006-01-02", req.Date)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
+			httputil.WriteError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
 			return
 		}
 	}
@@ -78,7 +63,7 @@ func (h *Handler) CreateMetric(w http.ResponseWriter, r *http.Request) {
 	// Check if metric already exists for this date
 	existingMetric, err := h.repo.GetByDate(userID, metricDate)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -86,10 +71,10 @@ func (h *Handler) CreateMetric(w http.ResponseWriter, r *http.Request) {
 		// Update existing metric
 		existingMetric.Weight = req.Weight
 		if err := h.repo.Update(existingMetric); err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		writeJSON(w, http.StatusOK, existingMetric)
+		httputil.WriteJSON(w, http.StatusOK, existingMetric)
 	} else {
 		// Create new metric
 		metric := &BodyMetric{
@@ -99,132 +84,132 @@ func (h *Handler) CreateMetric(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := h.repo.Create(metric); err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		writeJSON(w, http.StatusCreated, metric)
+		httputil.WriteJSON(w, http.StatusCreated, metric)
 	}
 }
 
 // GetMetrics handles GET /metrics
 func (h *Handler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	metrics, err := h.repo.GetAll(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, metrics)
+	httputil.WriteJSON(w, http.StatusOK, metrics)
 }
 
 // GetLatest handles GET /metrics/latest
 func (h *Handler) GetLatest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	metric, err := h.repo.GetLatest(userID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "No metrics found")
+		httputil.WriteError(w, http.StatusNotFound, "No metrics found")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, metric)
+	httputil.WriteJSON(w, http.StatusOK, metric)
 }
 
 // GetWeekly handles GET /metrics/weekly
 func (h *Handler) GetWeekly(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	metrics, err := h.repo.GetWeekly(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, metrics)
+	httputil.WriteJSON(w, http.StatusOK, metrics)
 }
 
 // GetByDate handles GET /metrics/date/{date}
 func (h *Handler) GetByDate(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Date : " + r.URL.String())
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract date from URL path
 	dateStr := strings.TrimPrefix(r.URL.Path, "/metrics/date/")
 	if dateStr == "" {
-		writeError(w, http.StatusBadRequest, "Date is required (use YYYY-MM-DD)")
+		httputil.WriteError(w, http.StatusBadRequest, "Date is required (use YYYY-MM-DD)")
 		return
 	}
 
 	// Parse date
 	metricDate, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
 		return
 	}
 
 	// Get metric for the date
 	metric, err := h.repo.GetByDate(userID, metricDate)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if metric == nil {
-		writeError(w, http.StatusNotFound, "No metric found for this date")
+		httputil.WriteError(w, http.StatusNotFound, "No metric found for this date")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, metric)
+	httputil.WriteJSON(w, http.StatusOK, metric)
 }
 
 // GetTrends handles GET /metrics/trends?period=7d|30d|90d
 func (h *Handler) GetTrends(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
@@ -243,7 +228,7 @@ func (h *Handler) GetTrends(w http.ResponseWriter, r *http.Request) {
 	case "90d":
 		days = 90
 	default:
-		writeError(w, http.StatusBadRequest, "Invalid period (use 7d, 30d, or 90d)")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid period (use 7d, 30d, or 90d)")
 		return
 	}
 
@@ -252,12 +237,12 @@ func (h *Handler) GetTrends(w http.ResponseWriter, r *http.Request) {
 
 	metrics, err := h.repo.GetByDateRange(userID, startDate, endDate)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if len(metrics) == 0 {
-		writeError(w, http.StatusNotFound, "No metrics found for period")
+		httputil.WriteError(w, http.StatusNotFound, "No metrics found for period")
 		return
 	}
 
@@ -270,30 +255,30 @@ func (h *Handler) GetTrends(w http.ResponseWriter, r *http.Request) {
 		Trend:   trend,
 	}
 
-	writeJSON(w, http.StatusOK, response)
+	httputil.WriteJSON(w, http.StatusOK, response)
 }
 
 // DeleteMetric handles DELETE /metrics/{id}
 func (h *Handler) DeleteMetric(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	id, err := extractID(r.URL.Path, "/metrics/")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid ID")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
 	if err := h.repo.Delete(uint(id), userID); err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		httputil.WriteError(w, http.StatusNotFound, err.Error())
 		return
 	}
 

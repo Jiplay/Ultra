@@ -4,7 +4,7 @@ GET http://localhost:8080/health
 ###
 
 
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2LCJlbWFpbCI6ImRpZXQtdGVzdEBleGFtcGxlLmNvbSIsImV4cCI6MTc2ODkyNTI2MCwiaWF0IjoxNzY2MzMzMjYwfQ.nF1dBB57626ntHMlo8ImIJecEWipRIpksae3YadxL_g
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJlbWFpbCI6Imp1anVnYXJzaWFAZ21haWwuY29tIiwiZXhwIjoxNzY5MDA2ODc1LCJpYXQiOjE3NjY0MTQ4NzV9.wUYk_86Fbohmzf3qzsV-1gn0K74i6OtvvGaW-Mjb5eE
 
 ### Create Food - Chicken Breast
 POST http://localhost:8080/foods

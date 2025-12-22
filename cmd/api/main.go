@@ -65,10 +65,16 @@ func main() {
 	// Initialize services
 	barcodeService := barcode.NewService()
 
+	// Create food adapter for recipe service (implements recipe.FoodProvider interface)
+	foodAdapter := recipe.NewFoodAdapter(foodRepo)
+
+	// Create recipe service with dependencies
+	recipeService := recipe.NewService(recipeRepo, foodAdapter, db)
+
 	// Initialize handlers
 	authHandler := auth.NewHandler(userRepo)
 	foodHandler := food.NewHandler(foodRepo, barcodeService)
-	recipeHandler := recipe.NewHandler(recipeRepo, foodRepo)
+	recipeHandler := recipe.NewHandler(recipeService)
 	goalHandler := goal.NewHandler(goalRepo, userRepo)
 	diaryHandler := diary.NewHandler(diaryRepo, foodRepo, goalRepo)
 	metricsHandler := metrics.NewHandler(metricsRepo)

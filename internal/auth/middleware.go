@@ -2,8 +2,17 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
+
+	"ultra-bis/internal/httputil"
+)
+
+// contextKey is a custom type for context keys to avoid collisions
+type contextKey string
+
+const (
+	// EmailKey is the context key for storing authenticated user email
+	EmailKey contextKey = "email"
 )
 
 // JWTMiddleware is a middleware that validates JWT tokens
@@ -11,23 +20,19 @@ func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := ExtractTokenFromHeader(r)
 		if tokenString == "" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{"error": "Missing authorization token"})
+			httputil.WriteError(w, http.StatusUnauthorized, "Missing authorization token")
 			return
 		}
 
 		claims, err := ValidateToken(tokenString)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid or expired token"})
+			httputil.WriteError(w, http.StatusUnauthorized, "Invalid or expired token")
 			return
 		}
 
-		// Add user info to context
-		ctx := context.WithValue(r.Context(), "user_id", claims.UserID)
-		ctx = context.WithValue(ctx, "email", claims.Email)
+		// Add user info to context using typed keys
+		ctx := httputil.SetUserID(r.Context(), claims.UserID)
+		ctx = context.WithValue(ctx, EmailKey, claims.Email)
 
 		// Call next handler with updated context
 		next.ServeHTTP(w, r.WithContext(ctx))

@@ -2,67 +2,168 @@ package recipe
 
 import (
 	"net/http"
-	"strings"
 
 	"ultra-bis/internal/auth"
+	"ultra-bis/internal/httputil"
 )
 
-// RegisterRoutes registers recipe routes (all protected)
+// RegisterRoutes registers all recipe routes with improved middleware chaining
 func RegisterRoutes(mux *http.ServeMux, handler *Handler) {
-	// All recipe routes require authentication
+	// Recipe list and creation: /recipes
 	mux.HandleFunc("/recipes", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/recipes" {
-			auth.JWTMiddleware(handler.ListRecipes)(w, r)
+		// Only handle exact match, not sub-paths
+		if r.URL.Path != "/recipes" {
+			http.NotFound(w, r)
 			return
 		}
-		if r.Method == http.MethodPost && r.URL.Path == "/recipes" {
-			auth.JWTMiddleware(handler.CreateRecipe)(w, r)
-			return
+
+		switch r.Method {
+		case http.MethodGet:
+			// GET /recipes - List recipes
+			httputil.ChainMiddleware(
+				handler.ListRecipes,
+				auth.JWTMiddleware,
+			)(w, r)
+
+		case http.MethodPost:
+			// POST /recipes - Create recipe
+			httputil.ChainMiddleware(
+				handler.CreateRecipe,
+				auth.JWTMiddleware,
+			)(w, r)
+
+		default:
+			httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		}
-		http.NotFound(w, r)
 	})
 
-	// Recipe detail routes (all protected)
+	// Recipe operations: /recipes/{id}
+	// Pattern: /recipes/123
 	mux.HandleFunc("/recipes/", func(w http.ResponseWriter, r *http.Request) {
-		path := strings.Trim(r.URL.Path, "/")
-		parts := strings.Split(path, "/")
+		// Parse path to determine which endpoint this is
+		pathSegments := len(splitPath(r.URL.Path))
 
-		// /recipes/{id}
-		if len(parts) == 2 {
-			if r.Method == http.MethodGet {
-				auth.JWTMiddleware(handler.GetRecipe)(w, r)
-				return
+		switch pathSegments {
+		case 2:
+			// /recipes/{id}
+			handleRecipeDetail(w, r, handler)
+
+		case 3:
+			// /recipes/{id}/ingredients
+			if getPathSegment(r.URL.Path, 2) == "ingredients" {
+				handleRecipeIngredients(w, r, handler)
+			} else {
+				http.NotFound(w, r)
 			}
-			if r.Method == http.MethodPut {
-				auth.JWTMiddleware(handler.UpdateRecipe)(w, r)
-				return
+
+		case 4:
+			// /recipes/{id}/ingredients/{ingredientId}
+			if getPathSegment(r.URL.Path, 2) == "ingredients" {
+				handleIngredientDetail(w, r, handler)
+			} else {
+				http.NotFound(w, r)
 			}
-			if r.Method == http.MethodDelete {
-				auth.JWTMiddleware(handler.DeleteRecipe)(w, r)
-				return
-			}
+
+		default:
+			http.NotFound(w, r)
 		}
-
-		// /recipes/{id}/ingredients
-		if len(parts) == 3 && parts[2] == "ingredients" {
-			if r.Method == http.MethodPost {
-				auth.JWTMiddleware(handler.AddIngredient)(w, r)
-				return
-			}
-		}
-
-		// /recipes/{id}/ingredients/{ingredientId}
-		if len(parts) == 4 && parts[2] == "ingredients" {
-			if r.Method == http.MethodPut {
-				auth.JWTMiddleware(handler.UpdateIngredient)(w, r)
-				return
-			}
-			if r.Method == http.MethodDelete {
-				auth.JWTMiddleware(handler.DeleteIngredient)(w, r)
-				return
-			}
-		}
-
-		http.NotFound(w, r)
 	})
+}
+
+// handleRecipeDetail handles /recipes/{id}
+func handleRecipeDetail(w http.ResponseWriter, r *http.Request, handler *Handler) {
+	switch r.Method {
+	case http.MethodGet:
+		httputil.ChainMiddleware(
+			handler.GetRecipe,
+			httputil.ExtractPathID(1),
+			auth.JWTMiddleware,
+		)(w, r)
+
+	case http.MethodPut:
+		httputil.ChainMiddleware(
+			handler.UpdateRecipe,
+			httputil.ExtractPathID(1),
+			auth.JWTMiddleware,
+		)(w, r)
+
+	case http.MethodDelete:
+		httputil.ChainMiddleware(
+			handler.DeleteRecipe,
+			httputil.ExtractPathID(1),
+			auth.JWTMiddleware,
+		)(w, r)
+
+	default:
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}
+
+// handleRecipeIngredients handles /recipes/{id}/ingredients
+func handleRecipeIngredients(w http.ResponseWriter, r *http.Request, handler *Handler) {
+	switch r.Method {
+	case http.MethodPost:
+		httputil.ChainMiddleware(
+			handler.AddIngredient,
+			httputil.ExtractPathID(1),
+			auth.JWTMiddleware,
+		)(w, r)
+
+	default:
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}
+
+// handleIngredientDetail handles /recipes/{id}/ingredients/{ingredientId}
+func handleIngredientDetail(w http.ResponseWriter, r *http.Request, handler *Handler) {
+	switch r.Method {
+	case http.MethodPut:
+		httputil.ChainMiddleware(
+			handler.UpdateIngredient,
+			httputil.ExtractTwoPathIDs(1, 3),
+			auth.JWTMiddleware,
+		)(w, r)
+
+	case http.MethodDelete:
+		httputil.ChainMiddleware(
+			handler.DeleteIngredient,
+			httputil.ExtractTwoPathIDs(1, 3),
+			auth.JWTMiddleware,
+		)(w, r)
+
+	default:
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}
+
+// Helper functions for path parsing
+
+func splitPath(path string) []string {
+	segments := []string{}
+	current := ""
+
+	for i := 0; i < len(path); i++ {
+		if path[i] == '/' {
+			if current != "" {
+				segments = append(segments, current)
+				current = ""
+			}
+		} else {
+			current += string(path[i])
+		}
+	}
+
+	if current != "" {
+		segments = append(segments, current)
+	}
+
+	return segments
+}
+
+func getPathSegment(path string, index int) string {
+	segments := splitPath(path)
+	if index < len(segments) {
+		return segments[index]
+	}
+	return ""
 }

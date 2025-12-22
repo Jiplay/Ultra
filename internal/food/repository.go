@@ -107,3 +107,20 @@ func (r *Repository) Delete(id int) error {
 
 	return nil
 }
+
+// GetByIDs retrieves multiple food items by their IDs in a single query
+// This method is optimized for batch fetching to avoid N+1 query problems
+func (r *Repository) GetByIDs(ids []int) ([]*Food, error) {
+	if len(ids) == 0 {
+		return []*Food{}, nil
+	}
+
+	var foods []*Food
+	result := r.db.Where("id IN ?", ids).Find(&foods)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to get foods: %w", result.Error)
+	}
+
+	return foods, nil
+}

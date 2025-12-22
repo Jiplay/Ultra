@@ -1,6 +1,7 @@
 package diary
 
 import (
+	"ultra-bis/internal/httputil"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -53,57 +54,41 @@ func (h *Handler) SetRecipeRepo(recipeRepo RecipeRepository) {
 	h.recipeRepo = recipeRepo
 }
 
-// ErrorResponse represents an error response
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
-
-// writeJSON writes a JSON response
-func writeJSON(w http.ResponseWriter, status int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
-}
-
-// writeError writes an error response
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, ErrorResponse{Error: message})
-}
 
 // CreateEntry handles POST /diary/entries
 func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	var req CreateDiaryEntryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid request body")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Validation
 	if req.FoodID == nil && req.RecipeID == nil {
-		writeError(w, http.StatusBadRequest, "Either food_id or recipe_id is required")
+		httputil.WriteError(w, http.StatusBadRequest, "Either food_id or recipe_id is required")
 		return
 	}
 
 	// For food entries, quantity_grams is required
 	// For recipe entries, either quantity_grams or custom_ingredients is required
 	if req.FoodID != nil && req.QuantityGrams <= 0 {
-		writeError(w, http.StatusBadRequest, "Quantity in grams must be greater than 0 for food entries")
+		httputil.WriteError(w, http.StatusBadRequest, "Quantity in grams must be greater than 0 for food entries")
 		return
 	}
 
 	if req.RecipeID != nil && req.QuantityGrams <= 0 && len(req.CustomIngredients) == 0 {
-		writeError(w, http.StatusBadRequest, "Either quantity_grams or custom_ingredients is required for recipe entries")
+		httputil.WriteError(w, http.StatusBadRequest, "Either quantity_grams or custom_ingredients is required for recipe entries")
 		return
 	}
 
@@ -115,7 +100,7 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 		var err error
 		entryDate, err = time.Parse("2006-01-02", req.Date)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
+			httputil.WriteError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
 			return
 		}
 	}
@@ -135,7 +120,7 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 	if req.FoodID != nil {
 		foodItem, err := h.foodRepo.GetByID(int(*req.FoodID))
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "Food not found")
+			httputil.WriteError(w, http.StatusBadRequest, "Food not found")
 			return
 		}
 
@@ -150,13 +135,13 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 	// Calculate nutrition if recipe_id is provided
 	if req.RecipeID != nil {
 		if h.recipeRepo == nil {
-			writeError(w, http.StatusInternalServerError, "Recipe repository not initialized")
+			httputil.WriteError(w, http.StatusInternalServerError, "Recipe repository not initialized")
 			return
 		}
 
 		_, err := h.recipeRepo.GetByID(int(*req.RecipeID))
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "Recipe not found")
+			httputil.WriteError(w, http.StatusBadRequest, "Recipe not found")
 			return
 		}
 
@@ -167,7 +152,7 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 		if len(req.CustomIngredients) > 0 {
 			// Validate custom ingredients belong to recipe
 			if err := h.validateCustomIngredients(int(*req.RecipeID), req.CustomIngredients); err != nil {
-				writeError(w, http.StatusBadRequest, err.Error())
+				httputil.WriteError(w, http.StatusBadRequest, err.Error())
 				return
 			}
 
@@ -175,7 +160,7 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 			var calcErr error
 			customIngredients, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, totalWeight, calcErr = h.calculateCustomIngredientsNutrition(req.CustomIngredients)
 			if calcErr != nil {
-				writeError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
+				httputil.WriteError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
 				return
 			}
 		} else {
@@ -183,7 +168,7 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 			var calcErr error
 			customIngredients, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, calcErr = h.convertProportionalToCustomIngredients(int(*req.RecipeID), req.QuantityGrams)
 			if calcErr != nil {
-				writeError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
+				httputil.WriteError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
 				return
 			}
 			totalWeight = req.QuantityGrams
@@ -200,23 +185,23 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Create(entry); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, entry)
+	httputil.WriteJSON(w, http.StatusCreated, entry)
 }
 
 // GetEntries handles GET /diary/entries?date=YYYY-MM-DD
 func (h *Handler) GetEntries(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
@@ -228,30 +213,30 @@ func (h *Handler) GetEntries(w http.ResponseWriter, r *http.Request) {
 		var err error
 		entryDate, err = time.Parse("2006-01-02", dateStr)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
+			httputil.WriteError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
 			return
 		}
 	}
 
 	entries, err := h.repo.GetByDate(userID, entryDate)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, entries)
+	httputil.WriteJSON(w, http.StatusOK, entries)
 }
 
 // GetDailySummary handles GET /diary/summary/{date}
 func (h *Handler) GetDailySummary(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
@@ -262,21 +247,21 @@ func (h *Handler) GetDailySummary(w http.ResponseWriter, r *http.Request) {
 
 	entryDate, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
 		return
 	}
 
 	// Get entries for the day
 	entries, err := h.repo.GetByDate(userID, entryDate)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Calculate totals
 	summary, err := h.repo.GetDailySummary(userID, entryDate)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -316,37 +301,37 @@ func (h *Handler) GetDailySummary(w http.ResponseWriter, r *http.Request) {
 		Entries:       entries,
 	}
 
-	writeJSON(w, http.StatusOK, response)
+	httputil.WriteJSON(w, http.StatusOK, response)
 }
 
 // UpdateEntry handles PUT /diary/entries/{id}
 func (h *Handler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	id, err := extractID(r.URL.Path, "/diary/entries/")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid ID")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
 	var req UpdateDiaryEntryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid request body")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	entry, err := h.repo.GetByID(uint(id), userID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "Entry not found")
+		httputil.WriteError(w, http.StatusNotFound, "Entry not found")
 		return
 	}
 
@@ -370,13 +355,13 @@ func (h *Handler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
 		if len(req.CustomIngredients) > 0 {
 			// Custom ingredients provided - validate and recalculate
 			if err := h.validateCustomIngredients(int(*entry.RecipeID), req.CustomIngredients); err != nil {
-				writeError(w, http.StatusBadRequest, err.Error())
+				httputil.WriteError(w, http.StatusBadRequest, err.Error())
 				return
 			}
 
 			customIngredients, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, totalWeight, calcErr := h.calculateCustomIngredientsNutrition(req.CustomIngredients)
 			if calcErr != nil {
-				writeError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
+				httputil.WriteError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
 				return
 			}
 
@@ -391,7 +376,7 @@ func (h *Handler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
 			// Proportional scaling - convert to custom ingredients
 			customIngredients, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, calcErr := h.convertProportionalToCustomIngredients(int(*entry.RecipeID), req.QuantityGrams)
 			if calcErr != nil {
-				writeError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
+				httputil.WriteError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
 				return
 			}
 
@@ -413,34 +398,34 @@ func (h *Handler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Update(entry); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, entry)
+	httputil.WriteJSON(w, http.StatusOK, entry)
 }
 
 // DeleteEntry handles DELETE /diary/entries/{id}
 func (h *Handler) DeleteEntry(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	id, err := extractID(r.URL.Path, "/diary/entries/")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid ID")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
 	if err := h.repo.Delete(uint(id), userID); err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		httputil.WriteError(w, http.StatusNotFound, err.Error())
 		return
 	}
 
@@ -458,13 +443,13 @@ func calculateAdherence(actual, goal float64) float64 {
 // GetWeeklySummary handles GET /diary/weekly?start_date=YYYY-MM-DD
 func (h *Handler) GetWeeklySummary(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
@@ -484,7 +469,7 @@ func (h *Handler) GetWeeklySummary(w http.ResponseWriter, r *http.Request) {
 		var err error
 		startDate, err = time.Parse("2006-01-02", startDateStr)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
+			httputil.WriteError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
 			return
 		}
 	}
@@ -514,14 +499,14 @@ func (h *Handler) GetWeeklySummary(w http.ResponseWriter, r *http.Request) {
 		// Get entries for this day
 		entries, err := h.repo.GetByDate(userID, currentDate)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
 		// Calculate totals for this day
 		summary, err := h.repo.GetDailySummary(userID, currentDate)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
@@ -573,7 +558,7 @@ func (h *Handler) GetWeeklySummary(w http.ResponseWriter, r *http.Request) {
 		AverageFiber:    roundToTwo(totalFiber / 7),
 	}
 
-	writeJSON(w, http.StatusOK, weeklySummary)
+	httputil.WriteJSON(w, http.StatusOK, weeklySummary)
 }
 
 // roundToTwo rounds a float to 2 decimal places

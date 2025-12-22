@@ -5,7 +5,7 @@
 ### 0. SETUP - Authentication & Foods
 ###############################################
 
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJlbWFpbCI6Imp1anVnYXJzaWFAZ21haWwuY29tIiwiZXhwIjoxNzY1MzA1MjQ2LCJpYXQiOjE3NjI3MTMyNDZ9.vSC8_W4zTBJdijnS7IiOUccvk-22JYF8Dqkxd0DI6T4
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2LCJlbWFpbCI6ImRpZXQtdGVzdEBleGFtcGxlLmNvbSIsImV4cCI6MTc2ODkyNTI2MCwiaWF0IjoxNzY2MzMzMjYwfQ.nF1dBB57626ntHMlo8ImIJecEWipRIpksae3YadxL_g
 
 ### Register new user (if needed)
 POST http://localhost:8080/auth/register

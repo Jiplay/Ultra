@@ -1,6 +1,7 @@
 package goal
 
 import (
+	"ultra-bis/internal/httputil"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -23,39 +24,23 @@ func NewHandler(repo *Repository, userRepo *user.Repository) *Handler {
 	return &Handler{repo: repo, userRepo: userRepo}
 }
 
-// ErrorResponse represents an error response
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
-
-// writeJSON writes a JSON response
-func writeJSON(w http.ResponseWriter, status int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
-}
-
-// writeError writes an error response
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, ErrorResponse{Error: message})
-}
 
 // CreateGoal handles POST /goals
 func (h *Handler) CreateGoal(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	var req CreateGoalRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid request body")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -94,85 +79,85 @@ func (h *Handler) CreateGoal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Create(goal); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, goal)
+	httputil.WriteJSON(w, http.StatusCreated, goal)
 }
 
 // GetActiveGoal handles GET /goals
 func (h *Handler) GetActiveGoal(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	goal, err := h.repo.GetActive(userID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "No active goal found")
+		httputil.WriteError(w, http.StatusNotFound, "No active goal found")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, goal)
+	httputil.WriteJSON(w, http.StatusOK, goal)
 }
 
 // GetAllGoals handles GET /goals/all
 func (h *Handler) GetAllGoals(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	goals, err := h.repo.GetAll(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, goals)
+	httputil.WriteJSON(w, http.StatusOK, goals)
 }
 
 // UpdateGoal handles PUT /goals/{id}
 func (h *Handler) UpdateGoal(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	id, err := extractID(r.URL.Path, "/goals/")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid ID")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
 	var req UpdateGoalRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid request body")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	goal, err := h.repo.GetByID(uint(id), userID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "Goal not found")
+		httputil.WriteError(w, http.StatusNotFound, "Goal not found")
 		return
 	}
 
@@ -197,34 +182,34 @@ func (h *Handler) UpdateGoal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.repo.Update(goal); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, goal)
+	httputil.WriteJSON(w, http.StatusOK, goal)
 }
 
 // DeleteGoal handles DELETE /goals/{id}
 func (h *Handler) DeleteGoal(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	id, err := extractID(r.URL.Path, "/goals/")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid ID")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
 	if err := h.repo.Delete(uint(id), userID); err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		httputil.WriteError(w, http.StatusNotFound, err.Error())
 		return
 	}
 
@@ -234,26 +219,26 @@ func (h *Handler) DeleteGoal(w http.ResponseWriter, r *http.Request) {
 // GetRecommendedGoals calculates recommended nutrition goals
 func (h *Handler) GetRecommendedGoals(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Get user data
 	user, err := h.userRepo.GetByID(userID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "User not found")
+		httputil.WriteError(w, http.StatusNotFound, "User not found")
 		return
 	}
 
 	var req RecommendedGoalRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid request body")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -295,59 +280,59 @@ func (h *Handler) GetRecommendedGoals(w http.ResponseWriter, r *http.Request) {
 		Message:  message,
 	}
 
-	writeJSON(w, http.StatusOK, response)
+	httputil.WriteJSON(w, http.StatusOK, response)
 }
 
 // CalculateDietGoals handles POST /goals/calculate
 func (h *Handler) CalculateDietGoals(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := httputil.GetUserID(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	var req CalculateDietRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid request body")
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Get user data
 	user, err := h.userRepo.GetByID(userID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "User not found")
+		httputil.WriteError(w, http.StatusNotFound, "User not found")
 		return
 	}
 
 	// Validate request using the factory pattern
 	if err := ValidateDietRequest(&req, user); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		httputil.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// Get the appropriate calculator
 	calculator, err := GetDietCalculator(req.DietModel)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		httputil.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// Perform calculations
 	result, err := calculator.Calculate(user, req.Protocol)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Sprintf("Calculation failed: %v", err))
+		httputil.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Calculation failed: %v", err))
 		return
 	}
 
 	// Convert to response format
 	response := h.buildDietResponse(result)
 
-	writeJSON(w, http.StatusOK, response)
+	httputil.WriteJSON(w, http.StatusOK, response)
 }
 
 // buildDietResponse converts DietCalculationResult to CalculateDietResponse
@@ -406,7 +391,7 @@ func getActivityMultiplier(level user.ActivityLevel) float64 {
 // GetAvailableDiets handles GET /goals/diets
 func (h *Handler) GetAvailableDiets(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -443,7 +428,7 @@ func (h *Handler) GetAvailableDiets(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	writeJSON(w, http.StatusOK, response)
+	httputil.WriteJSON(w, http.StatusOK, response)
 }
 
 // extractID extracts the ID from the URL path

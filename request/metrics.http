@@ -35,7 +35,7 @@ Content-Type: application/json
 ### Log body weight for today (Protected)
 ### Creates new entry if doesn't exist
 POST http://localhost:8080/metrics
-Authorization: Bearer {{tokenJulien}}
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
