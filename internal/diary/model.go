@@ -78,6 +78,10 @@ type DiaryEntry struct {
 	Fat      float64 `json:"fat" gorm:"type:decimal(10,2)"`
 	Fiber    float64 `json:"fiber" gorm:"type:decimal(10,2)"`
 
+	// Cached tag values (for historical accuracy)
+	FoodTag   string `json:"food_tag,omitempty" gorm:"type:varchar(20)"`
+	RecipeTag string `json:"recipe_tag,omitempty" gorm:"type:varchar(20)"`
+
 	// Custom ingredients for recipe entries (JSONB)
 	CustomIngredients CustomIngredients `json:"custom_ingredients,omitempty" gorm:"type:jsonb"`
 

@@ -20,6 +20,7 @@ type Food struct {
 	Carbs       float64        `json:"carbs" gorm:"type:decimal(10,2)"`
 	Fat         float64        `json:"fat" gorm:"type:decimal(10,2)"`
 	Fiber       float64        `json:"fiber" gorm:"type:decimal(10,2)"`
+	Tag         string         `json:"tag" gorm:"type:varchar(20);not null;default:'routine'"`
 }
 
 // CreateFoodRequest represents the request body for creating a food item
@@ -31,6 +32,7 @@ type CreateFoodRequest struct {
 	Carbs       float64 `json:"carbs"`
 	Fat         float64 `json:"fat"`
 	Fiber       float64 `json:"fiber"`
+	Tag         string  `json:"tag"`
 }
 
 // UpdateFoodRequest represents the request body for updating a food item
@@ -42,4 +44,16 @@ type UpdateFoodRequest struct {
 	Carbs       float64 `json:"carbs"`
 	Fat         float64 `json:"fat"`
 	Fiber       float64 `json:"fiber"`
+	Tag         string  `json:"tag"`
+}
+
+// Tag constants
+const (
+	TagRoutine    = "routine"
+	TagContextual = "contextual"
+)
+
+// ValidateTag checks if tag is valid
+func ValidateTag(tag string) bool {
+	return tag == TagRoutine || tag == TagContextual
 }

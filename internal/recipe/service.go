@@ -55,6 +55,14 @@ func (s *Service) CreateRecipe(ctx context.Context, userID uint, req CreateRecip
 		return nil, fmt.Errorf("%w: name must be less than 255 characters", ErrInvalidInput)
 	}
 
+	// Validate tag (default to "routine" if empty)
+	tag := req.Tag
+	if tag == "" {
+		tag = "routine"
+	} else if tag != "routine" && tag != "contextual" {
+		return nil, fmt.Errorf("%w: tag must be 'routine' or 'contextual'", ErrInvalidInput)
+	}
+
 	// Validate all food IDs exist before starting transaction
 	if len(req.Ingredients) > 0 {
 		foodIDs := make([]int, len(req.Ingredients))
@@ -94,6 +102,7 @@ func (s *Service) CreateRecipe(ctx context.Context, userID uint, req CreateRecip
 		recipe = &Recipe{
 			Name:   req.Name,
 			UserID: &userID,
+			Tag:    tag,
 		}
 
 		if err := tx.Create(recipe).Error; err != nil {
@@ -154,6 +163,21 @@ func (s *Service) ListRecipes(ctx context.Context, userID uint, userOnly bool) (
 	return s.enrichRecipesWithNutrition(recipes)
 }
 
+// ListRecipesByTag retrieves recipes filtered by tag for a user
+func (s *Service) ListRecipesByTag(ctx context.Context, userID uint, tag string, userOnly bool) ([]RecipeListResponse, error) {
+	// Validate tag
+	if tag != "routine" && tag != "contextual" {
+		return nil, fmt.Errorf("%w: tag must be 'routine' or 'contextual'", ErrInvalidInput)
+	}
+
+	recipes, err := s.repo.GetByTagAndUserID(userID, tag, userOnly)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recipes by tag: %w", err)
+	}
+
+	return s.enrichRecipesWithNutrition(recipes)
+}
+
 // UpdateRecipe updates a recipe's basic information (not ingredients)
 func (s *Service) UpdateRecipe(ctx context.Context, userID uint, recipeID int, req UpdateRecipeRequest) (*Recipe, error) {
 	recipe, err := s.repo.GetByID(recipeID)
@@ -172,6 +196,14 @@ func (s *Service) UpdateRecipe(ctx context.Context, userID uint, recipeID int, r
 			return nil, fmt.Errorf("%w: name must be less than 255 characters", ErrInvalidInput)
 		}
 		recipe.Name = req.Name
+	}
+
+	// Validate and update tag if provided
+	if req.Tag != "" {
+		if req.Tag != "routine" && req.Tag != "contextual" {
+			return nil, fmt.Errorf("%w: tag must be 'routine' or 'contextual'", ErrInvalidInput)
+		}
+		recipe.Tag = req.Tag
 	}
 
 	if err := s.repo.Update(recipe); err != nil {
@@ -406,6 +438,7 @@ func (s *Service) enrichRecipesWithNutrition(recipes []Recipe) ([]RecipeListResp
 			UpdatedAt:   recipe.UpdatedAt,
 			Name:        recipe.Name,
 			UserID:      recipe.UserID,
+			Tag:         recipe.Tag,
 			Ingredients: make([]IngredientWithDetails, 0, len(recipe.Ingredients)),
 		}
 

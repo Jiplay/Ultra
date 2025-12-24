@@ -86,6 +86,34 @@ func (h *Handler) ListRecipes(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, recipes)
 }
 
+// ListRecipesByTag handles GET /recipes/{filter} where filter = routine|contextual
+func (h *Handler) ListRecipesByTag(w http.ResponseWriter, r *http.Request) {
+	userID, ok := httputil.GetUserID(r)
+	if !ok {
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Extract tag from path ID context (set by router)
+	tagInterface := r.Context().Value("tag_filter")
+	tag, ok := tagInterface.(string)
+	if !ok {
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid tag filter")
+		return
+	}
+
+	userOnlyParam := r.URL.Query().Get("user_only")
+	userOnly := userOnlyParam == "true"
+
+	recipes, err := h.service.ListRecipesByTag(r.Context(), userID, tag, userOnly)
+	if err != nil {
+		h.handleServiceError(w, err)
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, recipes)
+}
+
 // UpdateRecipe handles PUT /recipes/{id}
 func (h *Handler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 	userID, ok := httputil.GetUserID(r)

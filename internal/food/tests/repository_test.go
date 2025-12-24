@@ -143,3 +143,127 @@ func TestRepository_Delete(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, found)
 }
+
+func TestRepository_Create_WithTag(t *testing.T) {
+	_, repo := setupFoodTest(t)
+
+	req := food.CreateFoodRequest{
+		Name:     "Routine Food",
+		Calories: 150,
+		Protein:  15,
+		Tag:      "routine",
+	}
+
+	created, err := repo.Create(req)
+	assert.NoError(t, err)
+	require.NotNil(t, created)
+	assert.Equal(t, "routine", created.Tag)
+}
+
+func TestRepository_Create_WithDefaultTag(t *testing.T) {
+	_, repo := setupFoodTest(t)
+
+	// Create food without specifying tag
+	req := food.CreateFoodRequest{
+		Name:     "Default Tag Food",
+		Calories: 150,
+		Protein:  15,
+		// Tag is empty - should default to "routine"
+	}
+
+	created, err := repo.Create(req)
+	assert.NoError(t, err)
+	require.NotNil(t, created)
+	assert.Equal(t, "routine", created.Tag, "Should default to routine when tag is not specified")
+}
+
+func TestRepository_GetByTag_Routine(t *testing.T) {
+	_, repo := setupFoodTest(t)
+
+	// Create multiple foods with different tags
+	routineFood1 := food.CreateFoodRequest{Name: "Routine Food 1", Calories: 100, Protein: 10, Tag: "routine"}
+	routineFood2 := food.CreateFoodRequest{Name: "Routine Food 2", Calories: 200, Protein: 20, Tag: "routine"}
+	contextualFood := food.CreateFoodRequest{Name: "Contextual Food", Calories: 300, Protein: 30, Tag: "contextual"}
+
+	_, err := repo.Create(routineFood1)
+	require.NoError(t, err)
+	_, err = repo.Create(routineFood2)
+	require.NoError(t, err)
+	_, err = repo.Create(contextualFood)
+	require.NoError(t, err)
+
+	// Get routine foods
+	routineFoods, err := repo.GetByTag("routine")
+	assert.NoError(t, err)
+	assert.Len(t, routineFoods, 2, "Should return 2 routine foods")
+
+	// Verify all returned foods have routine tag
+	for _, f := range routineFoods {
+		assert.Equal(t, "routine", f.Tag)
+	}
+}
+
+func TestRepository_GetByTag_Contextual(t *testing.T) {
+	_, repo := setupFoodTest(t)
+
+	// Create multiple foods with different tags
+	routineFood := food.CreateFoodRequest{Name: "Routine Food", Calories: 100, Protein: 10, Tag: "routine"}
+	contextualFood1 := food.CreateFoodRequest{Name: "Contextual Food 1", Calories: 200, Protein: 20, Tag: "contextual"}
+	contextualFood2 := food.CreateFoodRequest{Name: "Contextual Food 2", Calories: 300, Protein: 30, Tag: "contextual"}
+
+	_, err := repo.Create(routineFood)
+	require.NoError(t, err)
+	_, err = repo.Create(contextualFood1)
+	require.NoError(t, err)
+	_, err = repo.Create(contextualFood2)
+	require.NoError(t, err)
+
+	// Get contextual foods
+	contextualFoods, err := repo.GetByTag("contextual")
+	assert.NoError(t, err)
+	assert.Len(t, contextualFoods, 2, "Should return 2 contextual foods")
+
+	// Verify all returned foods have contextual tag
+	for _, f := range contextualFoods {
+		assert.Equal(t, "contextual", f.Tag)
+	}
+}
+
+func TestRepository_Update_ChangeTag(t *testing.T) {
+	_, repo := setupFoodTest(t)
+
+	// Create a food with routine tag
+	createReq := food.CreateFoodRequest{
+		Name:     "Food Item",
+		Calories: 100,
+		Protein:  10,
+		Tag:      "routine",
+	}
+	created, err := repo.Create(createReq)
+	require.NoError(t, err)
+	assert.Equal(t, "routine", created.Tag)
+
+	// Update the tag to contextual
+	updateReq := food.UpdateFoodRequest{
+		Name:     "Food Item",
+		Calories: 100,
+		Protein:  10,
+		Tag:      "contextual",
+	}
+	updated, err := repo.Update(int(created.ID), updateReq)
+	assert.NoError(t, err)
+	assert.Equal(t, "contextual", updated.Tag)
+
+	// Verify the tag was updated in the database
+	found, err := repo.GetByID(int(created.ID))
+	assert.NoError(t, err)
+	assert.Equal(t, "contextual", found.Tag)
+}
+
+func TestValidateTag(t *testing.T) {
+	assert.True(t, food.ValidateTag("routine"))
+	assert.True(t, food.ValidateTag("contextual"))
+	assert.False(t, food.ValidateTag("invalid"))
+	assert.False(t, food.ValidateTag(""))
+	assert.False(t, food.ValidateTag("ROUTINE"))
+}

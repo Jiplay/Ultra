@@ -1,6 +1,7 @@
 package recipe
 
 import (
+	"context"
 	"net/http"
 
 	"ultra-bis/internal/auth"
@@ -70,8 +71,34 @@ func RegisterRoutes(mux *http.ServeMux, handler *Handler) {
 	})
 }
 
-// handleRecipeDetail handles /recipes/{id}
+// handleRecipeDetail handles /recipes/{id} and /recipes/{filter}
 func handleRecipeDetail(w http.ResponseWriter, r *http.Request, handler *Handler) {
+	// Extract path segment
+	pathSegments := splitPath(r.URL.Path)
+	if len(pathSegments) < 2 {
+		http.NotFound(w, r)
+		return
+	}
+
+	segment := pathSegments[1]
+
+	// Check if it's a tag filter (routine or contextual)
+	if segment == "routine" || segment == "contextual" {
+		if r.Method != http.MethodGet {
+			httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+
+		// Add tag to context and call filtered list handler
+		ctx := context.WithValue(r.Context(), "tag_filter", segment)
+		httputil.ChainMiddleware(
+			handler.ListRecipesByTag,
+			auth.JWTMiddleware,
+		)(w, r.WithContext(ctx))
+		return
+	}
+
+	// Otherwise, treat as numeric ID
 	switch r.Method {
 	case http.MethodGet:
 		httputil.ChainMiddleware(

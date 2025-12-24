@@ -57,6 +57,30 @@ func (r *Repository) GetGlobal() ([]Recipe, error) {
 	return recipes, err
 }
 
+// GetByTagAndUserID retrieves recipes filtered by tag for a user
+func (r *Repository) GetByTagAndUserID(userID uint, tag string, userOnly bool) ([]Recipe, error) {
+	var recipes []Recipe
+	query := r.db.Preload("Ingredients").Where("tag = ?", tag)
+
+	if userOnly {
+		// Only user's private recipes
+		query = query.Where("user_id = ?", userID)
+	} else {
+		// User's private recipes + global recipes
+		query = query.Where("user_id = ? OR user_id IS NULL", userID)
+	}
+
+	err := query.Find(&recipes).Error
+	return recipes, err
+}
+
+// GetGlobalByTag retrieves global recipes filtered by tag
+func (r *Repository) GetGlobalByTag(tag string) ([]Recipe, error) {
+	var recipes []Recipe
+	err := r.db.Preload("Ingredients").Where("user_id IS NULL AND tag = ?", tag).Find(&recipes).Error
+	return recipes, err
+}
+
 // Update updates a recipe
 func (r *Repository) Update(recipe *Recipe) error {
 	return r.db.Save(recipe).Error

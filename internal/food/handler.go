@@ -1,11 +1,11 @@
 package food
 
 import (
-	"ultra-bis/internal/httputil"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
+	"ultra-bis/internal/httputil"
 
 	"ultra-bis/internal/barcode"
 )
@@ -24,7 +24,6 @@ func NewHandler(repo *Repository, barcodeService *barcode.Service) *Handler {
 	}
 }
 
-
 // CreateFood handles POST /foods
 func (h *Handler) CreateFood(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -41,6 +40,14 @@ func (h *Handler) CreateFood(w http.ResponseWriter, r *http.Request) {
 	// Basic validation
 	if req.Name == "" {
 		httputil.WriteError(w, http.StatusBadRequest, "Name is required")
+		return
+	}
+
+	// Validate tag (default to "routine" if empty)
+	if req.Tag == "" {
+		req.Tag = TagRoutine
+	} else if !ValidateTag(req.Tag) {
+		httputil.WriteError(w, http.StatusBadRequest, "Tag must be 'routine' or 'contextual'")
 		return
 	}
 
@@ -120,6 +127,12 @@ func (h *Handler) UpdateFood(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate tag if provided
+	if req.Tag != "" && !ValidateTag(req.Tag) {
+		httputil.WriteError(w, http.StatusBadRequest, "Tag must be 'routine' or 'contextual'")
+		return
+	}
+
 	food, err := h.repo.Update(id, req)
 	if err != nil {
 		if err.Error() == "food not found" {
@@ -177,6 +190,28 @@ func (h *Handler) handleFoods(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetFoodsByTag handles GET /foods/{filter} where filter = routine|contextual
+func (h *Handler) GetFoodsByTag(w http.ResponseWriter, r *http.Request, tag string) {
+	if r.Method != http.MethodGet {
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// Validate tag
+	if !ValidateTag(tag) {
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid tag filter")
+		return
+	}
+
+	foods, err := h.repo.GetByTag(tag)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, foods)
+}
+
 // handleFoodsWithID routes /foods/{id} requests by HTTP method
 func (h *Handler) handleFoodsWithID(w http.ResponseWriter, r *http.Request) {
 	// Check if this is actually a request to /foods (no ID)
@@ -185,6 +220,23 @@ func (h *Handler) handleFoodsWithID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pathSegment := strings.TrimPrefix(r.URL.Path, "/foods/")
+
+	// Try to parse as numeric ID first
+	_, err := strconv.Atoi(pathSegment)
+
+	// If not numeric, check if it's a valid tag filter
+	if err != nil {
+		if pathSegment == TagRoutine || pathSegment == TagContextual {
+			h.GetFoodsByTag(w, r, pathSegment)
+			return
+		}
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid ID or filter")
+		return
+	}
+
+	// It's a numeric ID, proceed with ID-based operations
+	// Store the ID in the path for the handlers to extract
 	switch r.Method {
 	case http.MethodGet:
 		h.GetFood(w, r)
@@ -208,18 +260,18 @@ func (h *Handler) ScanBarcode(w http.ResponseWriter, r *http.Request) {
 	// Extract barcode from URL path
 	// Expected path: /foods/barcode/{code}
 	path := strings.TrimPrefix(r.URL.Path, "/foods/barcode/")
-	barcode := strings.TrimSpace(path)
+	fetchedBarcode := strings.TrimSpace(path)
 
-	if barcode == "" {
+	if fetchedBarcode == "" {
 		httputil.WriteError(w, http.StatusBadRequest, "Barcode is required")
 		return
 	}
 
 	// Fetch product data from Open Food Facts
-	productData, err := h.barcodeService.ScanBarcode(barcode)
+	productData, err := h.barcodeService.ScanBarcode(fetchedBarcode)
 	if err != nil {
 		if strings.Contains(err.Error(), "product not found") {
-			httputil.WriteError(w, http.StatusNotFound, "Product not found for barcode: "+barcode)
+			httputil.WriteError(w, http.StatusNotFound, "Product not found for barcode: "+fetchedBarcode)
 			return
 		}
 		httputil.WriteError(w, http.StatusInternalServerError, "Failed to scan barcode: "+err.Error())

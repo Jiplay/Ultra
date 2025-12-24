@@ -238,3 +238,128 @@ func TestRepository_GetByUserID_IncludesGlobal(t *testing.T) {
 	assert.Len(t, userRecipes, 1)
 	assert.Equal(t, "User Recipe", userRecipes[0].Name)
 }
+
+func TestRepository_Create_WithTag(t *testing.T) {
+	_, recipeRepo, _ := setupRecipeTest(t)
+
+	userID := uint(1)
+	r := &recipe.Recipe{
+		Name:   "Routine Recipe",
+		UserID: &userID,
+		Tag:    "routine",
+	}
+
+	err := recipeRepo.Create(r)
+	assert.NoError(t, err)
+	assert.NotZero(t, r.ID)
+	assert.Equal(t, "routine", r.Tag)
+}
+
+func TestRepository_GetByTagAndUserID_Routine(t *testing.T) {
+	_, recipeRepo, _ := setupRecipeTest(t)
+
+	userID := uint(1)
+
+	// Create recipes with different tags
+	routineRecipe1 := &recipe.Recipe{Name: "Routine Recipe 1", UserID: &userID, Tag: "routine"}
+	routineRecipe2 := &recipe.Recipe{Name: "Routine Recipe 2", UserID: &userID, Tag: "routine"}
+	contextualRecipe := &recipe.Recipe{Name: "Contextual Recipe", UserID: &userID, Tag: "contextual"}
+
+	recipeRepo.Create(routineRecipe1)
+	recipeRepo.Create(routineRecipe2)
+	recipeRepo.Create(contextualRecipe)
+
+	// Get routine recipes
+	recipes, err := recipeRepo.GetByTagAndUserID(userID, "routine", true)
+	assert.NoError(t, err)
+	assert.Len(t, recipes, 2, "Should return 2 routine recipes")
+
+	// Verify all returned recipes have routine tag
+	for _, r := range recipes {
+		assert.Equal(t, "routine", r.Tag)
+	}
+}
+
+func TestRepository_GetByTagAndUserID_Contextual(t *testing.T) {
+	_, recipeRepo, _ := setupRecipeTest(t)
+
+	userID := uint(1)
+
+	// Create recipes with different tags
+	routineRecipe := &recipe.Recipe{Name: "Routine Recipe", UserID: &userID, Tag: "routine"}
+	contextualRecipe1 := &recipe.Recipe{Name: "Contextual Recipe 1", UserID: &userID, Tag: "contextual"}
+	contextualRecipe2 := &recipe.Recipe{Name: "Contextual Recipe 2", UserID: &userID, Tag: "contextual"}
+
+	recipeRepo.Create(routineRecipe)
+	recipeRepo.Create(contextualRecipe1)
+	recipeRepo.Create(contextualRecipe2)
+
+	// Get contextual recipes
+	recipes, err := recipeRepo.GetByTagAndUserID(userID, "contextual", true)
+	assert.NoError(t, err)
+	assert.Len(t, recipes, 2, "Should return 2 contextual recipes")
+
+	// Verify all returned recipes have contextual tag
+	for _, r := range recipes {
+		assert.Equal(t, "contextual", r.Tag)
+	}
+}
+
+func TestRepository_GetByTagAndUserID_IncludesGlobal(t *testing.T) {
+	_, recipeRepo, _ := setupRecipeTest(t)
+
+	userID := uint(1)
+
+	// Create user recipe with routine tag
+	userRecipe := &recipe.Recipe{Name: "User Routine Recipe", UserID: &userID, Tag: "routine"}
+	recipeRepo.Create(userRecipe)
+
+	// Create global recipe with routine tag
+	globalRecipe := &recipe.Recipe{Name: "Global Routine Recipe", UserID: nil, Tag: "routine"}
+	recipeRepo.Create(globalRecipe)
+
+	// Create contextual recipe (should not be included)
+	contextualRecipe := &recipe.Recipe{Name: "Contextual Recipe", UserID: &userID, Tag: "contextual"}
+	recipeRepo.Create(contextualRecipe)
+
+	// Get routine recipes (user + global)
+	recipes, err := recipeRepo.GetByTagAndUserID(userID, "routine", false)
+	assert.NoError(t, err)
+	assert.Len(t, recipes, 2, "Should return 2 routine recipes (user + global)")
+
+	// Get only user routine recipes
+	userRecipes, err := recipeRepo.GetByTagAndUserID(userID, "routine", true)
+	assert.NoError(t, err)
+	assert.Len(t, userRecipes, 1, "Should return 1 user routine recipe")
+	assert.Equal(t, "User Routine Recipe", userRecipes[0].Name)
+}
+
+func TestRepository_GetGlobalByTag(t *testing.T) {
+	_, recipeRepo, _ := setupRecipeTest(t)
+
+	userID := uint(1)
+
+	// Create global recipes with different tags
+	globalRoutine1 := &recipe.Recipe{Name: "Global Routine 1", UserID: nil, Tag: "routine"}
+	globalRoutine2 := &recipe.Recipe{Name: "Global Routine 2", UserID: nil, Tag: "routine"}
+	globalContextual := &recipe.Recipe{Name: "Global Contextual", UserID: nil, Tag: "contextual"}
+
+	// Create user recipe (should not be included)
+	userRecipe := &recipe.Recipe{Name: "User Recipe", UserID: &userID, Tag: "routine"}
+
+	recipeRepo.Create(globalRoutine1)
+	recipeRepo.Create(globalRoutine2)
+	recipeRepo.Create(globalContextual)
+	recipeRepo.Create(userRecipe)
+
+	// Get global routine recipes
+	recipes, err := recipeRepo.GetGlobalByTag("routine")
+	assert.NoError(t, err)
+	assert.Len(t, recipes, 2, "Should return 2 global routine recipes")
+
+	// Verify all returned recipes are global and have routine tag
+	for _, r := range recipes {
+		assert.Nil(t, r.UserID, "Should be global recipe")
+		assert.Equal(t, "routine", r.Tag)
+	}
+}

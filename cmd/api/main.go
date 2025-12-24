@@ -39,6 +39,11 @@ func main() {
 		log.Fatal("Failed to remove metrics constraint:", err)
 	}
 
+	// Run custom migration to add tags to foods and recipes
+	if err := database.MigrateAddTags(db); err != nil {
+		log.Fatal("Failed to add tags migration:", err)
+	}
+
 	// Auto-migrate database schema (like Sequelize sync)
 	log.Println("Running database migrations...")
 	if err := db.AutoMigrate(

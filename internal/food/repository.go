@@ -19,6 +19,12 @@ func NewRepository(db *gorm.DB) *Repository {
 
 // Create inserts a new food item into the database
 func (r *Repository) Create(req CreateFoodRequest) (*Food, error) {
+	// Default tag to "routine" if not provided
+	tag := req.Tag
+	if tag == "" {
+		tag = TagRoutine
+	}
+
 	food := &Food{
 		Name:        req.Name,
 		Description: req.Description,
@@ -27,6 +33,7 @@ func (r *Repository) Create(req CreateFoodRequest) (*Food, error) {
 		Carbs:       req.Carbs,
 		Fat:         req.Fat,
 		Fiber:       req.Fiber,
+		Tag:         tag,
 	}
 
 	result := r.db.Create(food)
@@ -84,6 +91,9 @@ func (r *Repository) Update(id int, req UpdateFoodRequest) (*Food, error) {
 	food.Carbs = req.Carbs
 	food.Fat = req.Fat
 	food.Fiber = req.Fiber
+	if req.Tag != "" {
+		food.Tag = req.Tag
+	}
 
 	result = r.db.Save(&food)
 	if result.Error != nil {
@@ -120,6 +130,18 @@ func (r *Repository) GetByIDs(ids []int) ([]*Food, error) {
 
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get foods: %w", result.Error)
+	}
+
+	return foods, nil
+}
+
+// GetByTag retrieves food items filtered by tag (routine or contextual)
+func (r *Repository) GetByTag(tag string) ([]Food, error) {
+	var foods []Food
+	result := r.db.Where("tag = ?", tag).Order("created_at DESC").Find(&foods)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to get foods by tag: %w", result.Error)
 	}
 
 	return foods, nil

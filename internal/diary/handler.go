@@ -31,6 +31,7 @@ type RecipeRepository interface {
 type Recipe struct {
 	ID   uint
 	Name string
+	Tag  string
 }
 
 // RecipeIngredient represents an ingredient in a recipe
@@ -130,6 +131,7 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 		entry.Carbs = foodItem.Carbs * multiplier
 		entry.Fat = foodItem.Fat * multiplier
 		entry.Fiber = foodItem.Fiber * multiplier
+		entry.FoodTag = foodItem.Tag
 	}
 
 	// Calculate nutrition if recipe_id is provided
@@ -139,11 +141,14 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		_, err := h.recipeRepo.GetByID(int(*req.RecipeID))
+		recipe, err := h.recipeRepo.GetByID(int(*req.RecipeID))
 		if err != nil {
 			httputil.WriteError(w, http.StatusBadRequest, "Recipe not found")
 			return
 		}
+
+		// Cache recipe tag
+		entry.RecipeTag = recipe.Tag
 
 		var customIngredients CustomIngredients
 		var totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, totalWeight float64
@@ -348,6 +353,7 @@ func (h *Handler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
 				entry.Carbs = roundToTwo(foodItem.Carbs * multiplier)
 				entry.Fat = roundToTwo(foodItem.Fat * multiplier)
 				entry.Fiber = roundToTwo(foodItem.Fiber * multiplier)
+				entry.FoodTag = foodItem.Tag
 			}
 		}
 	} else if entry.RecipeID != nil {
