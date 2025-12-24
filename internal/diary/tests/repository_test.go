@@ -1,51 +1,54 @@
-package diary
+package tests
 
 import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
+	"ultra-bis/internal/diary"
+
 	"ultra-bis/internal/food"
 	"ultra-bis/internal/user"
 	"ultra-bis/test/testutil"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
 // mockRecipeRepository is a simple mock for testing diary calculations without circular imports
 type mockRecipeRepository struct {
-	recipes     map[int]Recipe
-	ingredients map[int][]RecipeIngredient
+	recipes     map[int]diary.Recipe
+	ingredients map[int][]diary.RecipeIngredient
 }
 
 func newMockRecipeRepository() *mockRecipeRepository {
 	return &mockRecipeRepository{
-		recipes:     make(map[int]Recipe),
-		ingredients: make(map[int][]RecipeIngredient),
+		recipes:     make(map[int]diary.Recipe),
+		ingredients: make(map[int][]diary.RecipeIngredient),
 	}
 }
 
-func (m *mockRecipeRepository) GetByID(id int) (Recipe, error) {
+func (m *mockRecipeRepository) GetByID(id int) (diary.Recipe, error) {
 	if recipe, ok := m.recipes[id]; ok {
 		return recipe, nil
 	}
-	return Recipe{}, gorm.ErrRecordNotFound
+	return diary.Recipe{}, gorm.ErrRecordNotFound
 }
 
-func (m *mockRecipeRepository) GetIngredients(recipeID int) ([]RecipeIngredient, error) {
+func (m *mockRecipeRepository) GetIngredients(recipeID int) ([]diary.RecipeIngredient, error) {
 	if ingredients, ok := m.ingredients[recipeID]; ok {
 		return ingredients, nil
 	}
 	return nil, gorm.ErrRecordNotFound
 }
 
-func (m *mockRecipeRepository) addRecipe(id int, name string, ingredients []RecipeIngredient) {
-	m.recipes[id] = Recipe{ID: uint(id), Name: name}
+func (m *mockRecipeRepository) addRecipe(id int, name string, ingredients []diary.RecipeIngredient) {
+	m.recipes[id] = diary.Recipe{ID: uint(id), Name: name}
 	m.ingredients[id] = ingredients
 }
 
 // setupDiaryTest creates a test DB with all necessary migrations
-func setupDiaryTest(t *testing.T) (*gorm.DB, *Repository, *food.Repository) {
+func setupDiaryTest(t *testing.T) (*gorm.DB, *diary.Repository, *food.Repository) {
 	t.Helper()
 	db := testutil.SetupTestDB(t)
 
@@ -53,12 +56,12 @@ func setupDiaryTest(t *testing.T) (*gorm.DB, *Repository, *food.Repository) {
 	if err := db.AutoMigrate(
 		&user.User{},
 		&food.Food{},
-		&DiaryEntry{},
+		&diary.DiaryEntry{},
 	); err != nil {
 		t.Fatalf("Failed to migrate database: %v", err)
 	}
 
-	diaryRepo := NewRepository(db)
+	diaryRepo := diary.NewRepository(db)
 	foodRepo := food.NewRepository(db)
 
 	return db, diaryRepo, foodRepo
@@ -110,11 +113,11 @@ func TestDiaryEntry_FoodCalculation_ExactPortion(t *testing.T) {
 	chicken := createTestFood(t, foodRepo, "Chicken Breast", 165, 31, 0, 3.6, 0)
 
 	// Create diary entry with exactly 100g
-	entry := &DiaryEntry{
+	entry := &diary.DiaryEntry{
 		UserID:        userID,
 		FoodID:        &chicken.ID,
 		Date:          time.Now(),
-		MealType:      Breakfast,
+		MealType:      diary.Breakfast,
 		QuantityGrams: 100,
 	}
 
@@ -145,11 +148,11 @@ func TestDiaryEntry_FoodCalculation_HalfPortion(t *testing.T) {
 	rice := createTestFood(t, foodRepo, "White Rice", 130, 2.7, 28, 0.3, 0.4)
 
 	// Create diary entry with 50g (half portion)
-	entry := &DiaryEntry{
+	entry := &diary.DiaryEntry{
 		UserID:        userID,
 		FoodID:        &rice.ID,
 		Date:          time.Now(),
-		MealType:      Lunch,
+		MealType:      diary.Lunch,
 		QuantityGrams: 50,
 	}
 
@@ -180,11 +183,11 @@ func TestDiaryEntry_FoodCalculation_DoublePortion(t *testing.T) {
 	oatmeal := createTestFood(t, foodRepo, "Oatmeal", 389, 16.9, 66, 6.9, 10.6)
 
 	// Create diary entry with 200g (double portion)
-	entry := &DiaryEntry{
+	entry := &diary.DiaryEntry{
 		UserID:        userID,
 		FoodID:        &oatmeal.ID,
 		Date:          time.Now(),
-		MealType:      Breakfast,
+		MealType:      diary.Breakfast,
 		QuantityGrams: 200,
 	}
 
@@ -215,11 +218,11 @@ func TestDiaryEntry_FoodCalculation_FractionalGrams(t *testing.T) {
 	oil := createTestFood(t, foodRepo, "Olive Oil", 884, 0, 0, 100, 0)
 
 	// Create diary entry with 15.5g (typical tablespoon)
-	entry := &DiaryEntry{
+	entry := &diary.DiaryEntry{
 		UserID:        userID,
 		FoodID:        &oil.ID,
 		Date:          time.Now(),
-		MealType:      Snack,
+		MealType:      diary.Snack,
 		QuantityGrams: 15.5,
 	}
 
@@ -251,7 +254,7 @@ func TestDiaryEntry_RecipeCalculation_ProportionalScaling(t *testing.T) {
 	// Create a mock recipe: 200g chicken + 150g rice = 350g total
 	mockRecipeRepo := newMockRecipeRepository()
 	recipeID := 1
-	mockRecipeRepo.addRecipe(recipeID, "Chicken & Rice", []RecipeIngredient{
+	mockRecipeRepo.addRecipe(recipeID, "Chicken & Rice", []diary.RecipeIngredient{
 		{FoodID: chicken.ID, QuantityGrams: 200},
 		{FoodID: rice.ID, QuantityGrams: 150},
 	})
@@ -263,11 +266,11 @@ func TestDiaryEntry_RecipeCalculation_ProportionalScaling(t *testing.T) {
 	// Total: 525 cal, 66.05g protein, 42g carbs, 7.65g fat, 0.6g fiber, 350g weight
 
 	// Create diary entry with 175g (half of the recipe)
-	entry := &DiaryEntry{
+	entry := &diary.DiaryEntry{
 		UserID:        userID,
 		RecipeID:      &testRecipeID,
 		Date:          time.Now(),
-		MealType:      Dinner,
+		MealType:      diary.Dinner,
 		QuantityGrams: 175, // Half the recipe
 	}
 
@@ -318,7 +321,7 @@ func TestDiaryEntry_RecipeCalculation_FullRecipe(t *testing.T) {
 	// Create mock recipe: 150g salmon + 100g quinoa + 50g avocado = 300g total
 	mockRecipeRepo := newMockRecipeRepository()
 	recipeID := 1
-	mockRecipeRepo.addRecipe(recipeID, "Power Bowl", []RecipeIngredient{
+	mockRecipeRepo.addRecipe(recipeID, "Power Bowl", []diary.RecipeIngredient{
 		{FoodID: salmon.ID, QuantityGrams: 150},
 		{FoodID: quinoa.ID, QuantityGrams: 100},
 		{FoodID: avocado.ID, QuantityGrams: 50},
@@ -326,11 +329,11 @@ func TestDiaryEntry_RecipeCalculation_FullRecipe(t *testing.T) {
 	testRecipeID := uint(recipeID)
 
 	// Create diary entry with the full 300g
-	entry := &DiaryEntry{
+	entry := &diary.DiaryEntry{
 		UserID:        userID,
 		RecipeID:      &testRecipeID,
 		Date:          time.Now(),
-		MealType:      Lunch,
+		MealType:      diary.Lunch,
 		QuantityGrams: 300,
 	}
 
@@ -368,7 +371,7 @@ func TestDiaryEntry_RecipeCalculation_CustomIngredients(t *testing.T) {
 	// Create mock recipe with default portions
 	mockRecipeRepo := newMockRecipeRepository()
 	recipeID := 1
-	mockRecipeRepo.addRecipe(recipeID, "Meal Prep", []RecipeIngredient{
+	mockRecipeRepo.addRecipe(recipeID, "Meal Prep", []diary.RecipeIngredient{
 		{FoodID: chicken.ID, QuantityGrams: 150},
 		{FoodID: rice.ID, QuantityGrams: 200},
 		{FoodID: broccoli.ID, QuantityGrams: 100},
@@ -376,15 +379,15 @@ func TestDiaryEntry_RecipeCalculation_CustomIngredients(t *testing.T) {
 	testRecipeID := uint(recipeID)
 
 	// Create diary entry with custom ingredient quantities (user wants extra chicken, less rice)
-	entry := &DiaryEntry{
+	entry := &diary.DiaryEntry{
 		UserID:   userID,
 		RecipeID: &testRecipeID,
 		Date:     time.Now(),
-		MealType: Dinner,
+		MealType: diary.Dinner,
 	}
 
 	// Custom ingredients: 200g chicken + 100g rice + 150g broccoli = 450g total
-	customIngredients := CustomIngredients{
+	customIngredients := diary.CustomIngredients{
 		{
 			FoodID:        chicken.ID,
 			FoodName:      chicken.Name,
@@ -465,12 +468,12 @@ func TestDiaryEntry_GetDailySummary(t *testing.T) {
 	testDate := time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC)
 
 	// Create multiple entries for the same day
-	entries := []*DiaryEntry{
+	entries := []*diary.DiaryEntry{
 		{
 			UserID:        userID,
 			FoodID:        &eggs.ID,
 			Date:          testDate,
-			MealType:      Breakfast,
+			MealType:      diary.Breakfast,
 			QuantityGrams: 100,
 			Calories:      155,
 			Protein:       13,
@@ -482,7 +485,7 @@ func TestDiaryEntry_GetDailySummary(t *testing.T) {
 			UserID:        userID,
 			FoodID:        &bread.ID,
 			Date:          testDate,
-			MealType:      Breakfast,
+			MealType:      diary.Breakfast,
 			QuantityGrams: 50,
 			Calories:      132.5,
 			Protein:       4.5,
@@ -494,7 +497,7 @@ func TestDiaryEntry_GetDailySummary(t *testing.T) {
 			UserID:        userID,
 			FoodID:        &banana.ID,
 			Date:          testDate,
-			MealType:      Snack,
+			MealType:      diary.Snack,
 			QuantityGrams: 120,
 			Calories:      106.8,
 			Protein:       1.32,
@@ -533,22 +536,22 @@ func TestDiaryEntry_GetByDate(t *testing.T) {
 	today := time.Date(2025, 1, 15, 12, 0, 0, 0, time.UTC)
 	yesterday := today.AddDate(0, 0, -1)
 
-	todayEntry := &DiaryEntry{
+	todayEntry := &diary.DiaryEntry{
 		UserID:        userID,
 		FoodID:        &chicken.ID,
 		Date:          today,
-		MealType:      Lunch,
+		MealType:      diary.Lunch,
 		QuantityGrams: 150,
 		Calories:      247.5,
 		Protein:       46.5,
 		Fat:           5.4,
 	}
 
-	yesterdayEntry := &DiaryEntry{
+	yesterdayEntry := &diary.DiaryEntry{
 		UserID:        userID,
 		FoodID:        &chicken.ID,
 		Date:          yesterday,
-		MealType:      Dinner,
+		MealType:      diary.Dinner,
 		QuantityGrams: 200,
 		Calories:      330,
 		Protein:       62,
@@ -562,14 +565,14 @@ func TestDiaryEntry_GetByDate(t *testing.T) {
 	entries, err := diaryRepo.GetByDate(userID, today)
 	assert.NoError(t, err)
 	assert.Len(t, entries, 1)
-	assert.Equal(t, Lunch, entries[0].MealType)
+	assert.Equal(t, diary.Lunch, entries[0].MealType)
 	assert.InDelta(t, 247.5, entries[0].Calories, 0.1)
 
 	// Get entries for yesterday
 	entriesYesterday, err := diaryRepo.GetByDate(userID, yesterday)
 	assert.NoError(t, err)
 	assert.Len(t, entriesYesterday, 1)
-	assert.Equal(t, Dinner, entriesYesterday[0].MealType)
+	assert.Equal(t, diary.Dinner, entriesYesterday[0].MealType)
 	assert.InDelta(t, 330.0, entriesYesterday[0].Calories, 0.1)
 }
 
@@ -581,11 +584,11 @@ func TestDiaryEntry_HistoricalAccuracy(t *testing.T) {
 	chicken := createTestFood(t, foodRepo, "Chicken", 165, 31, 0, 3.6, 0)
 
 	// Create diary entry
-	entry := &DiaryEntry{
+	entry := &diary.DiaryEntry{
 		UserID:        userID,
 		FoodID:        &chicken.ID,
 		Date:          time.Now(),
-		MealType:      Lunch,
+		MealType:      diary.Lunch,
 		QuantityGrams: 150,
 		Calories:      247.5,
 		Protein:       46.5,

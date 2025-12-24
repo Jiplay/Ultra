@@ -1,13 +1,16 @@
-.PHONY: help test test-unit test-integration test-coverage test-verbose clean build run docker-up docker-down
+.PHONY: help test test-unit test-integration test-coverage test-verbose test-clean test-recipe test-all clean build run docker-up docker-down
 
 # Default target
 help:
 	@echo "Ultra-Bis Makefile Commands:"
 	@echo "  make test              - Run all tests (unit + integration)"
+	@echo "  make test-all          - Run all tests from all packages (CI/CD)"
 	@echo "  make test-unit         - Run unit tests only (fast, no database)"
 	@echo "  make test-integration  - Run integration tests only (with test containers)"
 	@echo "  make test-coverage     - Run tests with coverage report"
 	@echo "  make test-verbose      - Run tests with verbose output"
+	@echo "  make test-clean        - Run tests with clean output (no verbose logs)"
+	@echo "  make test-recipe       - Run recipe package tests only"
 	@echo "  make clean             - Clean build artifacts and test cache"
 	@echo "  make build             - Build the application binary"
 	@echo "  make run               - Run the application locally"
@@ -74,3 +77,41 @@ docker-down:
 test-quick:
 	@echo "Running quick tests (auth + food)..."
 	go test -v -timeout 1m ./internal/auth ./internal/food
+
+# Run tests with clean output (no verbose Docker logs)
+test-clean:
+	@echo "Running tests with clean output..."
+	@go test -timeout 3m ./... 2>&1 | grep -E '(^(PASS|FAIL|ok|--- PASS|--- FAIL)|Test)' || true
+	@echo "Done. Use 'make test' for verbose output."
+
+# Run recipe package tests only
+test-recipe:
+	@echo "Running recipe tests..."
+	@go test -timeout 2m ./internal/recipe/tests
+	@echo "Done."
+
+# Run all tests from all packages (used by CI/CD)
+test-all:
+	@echo "=========================================="
+	@echo "Running ALL tests from all packages..."
+	@echo "=========================================="
+	@echo ""
+	@failed=0; \
+	for pkg in internal/auth internal/barcode internal/database internal/diary internal/food internal/goal internal/httputil internal/metrics internal/middleware internal/recipe internal/user; do \
+		echo "📦 Testing $$pkg..."; \
+		if go test -timeout 2m ./$$pkg/tests 2>&1; then \
+			echo "✅ $$pkg tests PASSED"; \
+		else \
+			echo "❌ $$pkg tests FAILED"; \
+			failed=$$((failed + 1)); \
+		fi; \
+		echo ""; \
+	done; \
+	echo "=========================================="; \
+	if [ $$failed -eq 0 ]; then \
+		echo "✅ All package tests PASSED!"; \
+	else \
+		echo "❌ $$failed package(s) had failures"; \
+		exit 1; \
+	fi; \
+	echo "=========================================="

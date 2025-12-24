@@ -1,25 +1,29 @@
-package recipe
+package tests
 
 import (
 	"testing"
 
+	"ultra-bis/internal/recipe"
+
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
+
 	"ultra-bis/internal/food"
 	"ultra-bis/test/testutil"
+
+	"gorm.io/gorm"
 )
 
 // setupRecipeTest creates a test DB with Recipe and Food migrations
-func setupRecipeTest(t *testing.T) (*gorm.DB, *Repository, *food.Repository) {
+func setupRecipeTest(t *testing.T) (*gorm.DB, *recipe.Repository, *food.Repository) {
 	t.Helper()
 	db := testutil.SetupTestDB(t)
 
 	// Run migrations for foods, recipes, and recipe_ingredients
-	if err := db.AutoMigrate(&food.Food{}, &Recipe{}, &RecipeIngredient{}); err != nil {
+	if err := db.AutoMigrate(&food.Food{}, &recipe.Recipe{}, &recipe.RecipeIngredient{}); err != nil {
 		t.Fatalf("Failed to migrate database: %v", err)
 	}
 
-	recipeRepo := NewRepository(db)
+	recipeRepo := recipe.NewRepository(db)
 	foodRepo := food.NewRepository(db)
 
 	return db, recipeRepo, foodRepo
@@ -29,37 +33,37 @@ func TestRepository_Create(t *testing.T) {
 	_, recipeRepo, _ := setupRecipeTest(t)
 
 	userID := uint(1)
-	recipe := &Recipe{
+	myrecipe := &recipe.Recipe{
 		Name:   "Test Recipe",
 		UserID: &userID,
 	}
 
-	err := recipeRepo.Create(recipe)
+	err := recipeRepo.Create(myrecipe)
 	assert.NoError(t, err)
-	assert.NotZero(t, recipe.ID)
+	assert.NotZero(t, myrecipe.ID)
 }
 
 func TestRepository_GetByID(t *testing.T) {
 	_, recipeRepo, _ := setupRecipeTest(t)
 
 	userID := uint(1)
-	recipe := &Recipe{
+	myrecipe := &recipe.Recipe{
 		Name:   "Test Recipe",
 		UserID: &userID,
 	}
-	recipeRepo.Create(recipe)
+	recipeRepo.Create(myrecipe)
 
-	found, err := recipeRepo.GetByID(int(recipe.ID))
+	found, err := recipeRepo.GetByID(int(myrecipe.ID))
 	assert.NoError(t, err)
-	assert.Equal(t, recipe.Name, found.Name)
+	assert.Equal(t, myrecipe.Name, found.Name)
 }
 
 func TestRepository_GetByUserID(t *testing.T) {
 	_, recipeRepo, _ := setupRecipeTest(t)
 
 	userID := uint(1)
-	recipe1 := &Recipe{Name: "Recipe 1", UserID: &userID}
-	recipe2 := &Recipe{Name: "Recipe 2", UserID: &userID}
+	recipe1 := &recipe.Recipe{Name: "Recipe 1", UserID: &userID}
+	recipe2 := &recipe.Recipe{Name: "Recipe 2", UserID: &userID}
 
 	recipeRepo.Create(recipe1)
 	recipeRepo.Create(recipe2)
@@ -73,14 +77,14 @@ func TestRepository_Update(t *testing.T) {
 	_, recipeRepo, _ := setupRecipeTest(t)
 
 	userID := uint(1)
-	recipe := &Recipe{Name: "Original", UserID: &userID}
-	recipeRepo.Create(recipe)
+	myrecipe := &recipe.Recipe{Name: "Original", UserID: &userID}
+	recipeRepo.Create(myrecipe)
 
-	recipe.Name = "Updated"
-	err := recipeRepo.Update(recipe)
+	myrecipe.Name = "Updated"
+	err := recipeRepo.Update(myrecipe)
 	assert.NoError(t, err)
 
-	found, _ := recipeRepo.GetByID(int(recipe.ID))
+	found, _ := recipeRepo.GetByID(int(myrecipe.ID))
 	assert.Equal(t, "Updated", found.Name)
 }
 
@@ -88,13 +92,13 @@ func TestRepository_Delete(t *testing.T) {
 	_, recipeRepo, _ := setupRecipeTest(t)
 
 	userID := uint(1)
-	recipe := &Recipe{Name: "ToDelete", UserID: &userID}
-	recipeRepo.Create(recipe)
+	myrecipe := &recipe.Recipe{Name: "ToDelete", UserID: &userID}
+	recipeRepo.Create(myrecipe)
 
-	err := recipeRepo.Delete(int(recipe.ID))
+	err := recipeRepo.Delete(int(myrecipe.ID))
 	assert.NoError(t, err)
 
-	_, err = recipeRepo.GetByID(int(recipe.ID))
+	_, err = recipeRepo.GetByID(int(myrecipe.ID))
 	assert.Error(t, err)
 }
 
@@ -110,12 +114,12 @@ func TestRepository_AddIngredient(t *testing.T) {
 
 	// Create recipe
 	userID := uint(1)
-	recipe := &Recipe{Name: "Test", UserID: &userID}
-	recipeRepo.Create(recipe)
+	myrecipe := &recipe.Recipe{Name: "Test", UserID: &userID}
+	recipeRepo.Create(myrecipe)
 
 	// Add ingredient
-	ingredient := &RecipeIngredient{
-		RecipeID:      recipe.ID,
+	ingredient := &recipe.RecipeIngredient{
+		RecipeID:      myrecipe.ID,
 		FoodID:        food.ID,
 		QuantityGrams: 200,
 	}
@@ -129,19 +133,19 @@ func TestRepository_GetIngredient(t *testing.T) {
 	_, recipeRepo, foodRepo := setupRecipeTest(t)
 
 	// Create food
-	food, _ := foodRepo.Create(food.CreateFoodRequest{
+	myfood, _ := foodRepo.Create(food.CreateFoodRequest{
 		Name:     "Chicken",
 		Calories: 165,
 	})
 
 	// Create recipe and ingredient
 	userID := uint(1)
-	recipe := &Recipe{Name: "Test", UserID: &userID}
-	recipeRepo.Create(recipe)
+	myrecipe := &recipe.Recipe{Name: "Test", UserID: &userID}
+	recipeRepo.Create(myrecipe)
 
-	ingredient := &RecipeIngredient{
-		RecipeID:      recipe.ID,
-		FoodID:        food.ID,
+	ingredient := &recipe.RecipeIngredient{
+		RecipeID:      myrecipe.ID,
+		FoodID:        myfood.ID,
 		QuantityGrams: 200,
 	}
 	recipeRepo.AddIngredient(ingredient)
@@ -155,19 +159,19 @@ func TestRepository_UpdateIngredient(t *testing.T) {
 	_, recipeRepo, foodRepo := setupRecipeTest(t)
 
 	// Create food
-	food, _ := foodRepo.Create(food.CreateFoodRequest{
+	myfood, _ := foodRepo.Create(food.CreateFoodRequest{
 		Name:     "Chicken",
 		Calories: 165,
 	})
 
 	// Create recipe and ingredient
 	userID := uint(1)
-	recipe := &Recipe{Name: "Test", UserID: &userID}
-	recipeRepo.Create(recipe)
+	myrecipe := &recipe.Recipe{Name: "Test", UserID: &userID}
+	recipeRepo.Create(myrecipe)
 
-	ingredient := &RecipeIngredient{
-		RecipeID:      recipe.ID,
-		FoodID:        food.ID,
+	ingredient := &recipe.RecipeIngredient{
+		RecipeID:      myrecipe.ID,
+		FoodID:        myfood.ID,
 		QuantityGrams: 200,
 	}
 	recipeRepo.AddIngredient(ingredient)
@@ -185,19 +189,19 @@ func TestRepository_DeleteIngredient(t *testing.T) {
 	_, recipeRepo, foodRepo := setupRecipeTest(t)
 
 	// Create food
-	food, _ := foodRepo.Create(food.CreateFoodRequest{
+	myfood, _ := foodRepo.Create(food.CreateFoodRequest{
 		Name:     "Chicken",
 		Calories: 165,
 	})
 
 	// Create recipe and ingredient
 	userID := uint(1)
-	recipe := &Recipe{Name: "Test", UserID: &userID}
-	recipeRepo.Create(recipe)
+	myrecipe := &recipe.Recipe{Name: "Test", UserID: &userID}
+	recipeRepo.Create(myrecipe)
 
-	ingredient := &RecipeIngredient{
-		RecipeID:      recipe.ID,
-		FoodID:        food.ID,
+	ingredient := &recipe.RecipeIngredient{
+		RecipeID:      myrecipe.ID,
+		FoodID:        myfood.ID,
 		QuantityGrams: 200,
 	}
 	recipeRepo.AddIngredient(ingredient)
@@ -216,11 +220,11 @@ func TestRepository_GetByUserID_IncludesGlobal(t *testing.T) {
 	userID := uint(1)
 
 	// Create user recipe
-	userRecipe := &Recipe{Name: "User Recipe", UserID: &userID}
+	userRecipe := &recipe.Recipe{Name: "User Recipe", UserID: &userID}
 	recipeRepo.Create(userRecipe)
 
 	// Create global recipe (nil userID)
-	globalRecipe := &Recipe{Name: "Global Recipe", UserID: nil}
+	globalRecipe := &recipe.Recipe{Name: "Global Recipe", UserID: nil}
 	recipeRepo.Create(globalRecipe)
 
 	// Get all recipes for user (should include global)

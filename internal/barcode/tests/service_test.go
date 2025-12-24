@@ -1,26 +1,28 @@
-package barcode
+package tests
 
 import (
+	"ultra-bis/internal/barcode"
+
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestService_convertToProductData(t *testing.T) {
-	service := NewService()
+	service := barcode.NewService()
 
 	tests := []struct {
 		name     string
-		product  *OpenFoodFactsProduct
-		expected *ProductData
+		product  *barcode.OpenFoodFactsProduct
+		expected *barcode.ProductData
 	}{
 		{
 			name: "complete product data",
-			product: &OpenFoodFactsProduct{
+			product: &barcode.OpenFoodFactsProduct{
 				ProductName: "Nutella",
 				GenericName: "Hazelnut cocoa spread",
 				Brands:      "Ferrero",
-				Nutriments: OpenFoodFactsNutriments{
+				Nutriments: barcode.OpenFoodFactsNutriments{
 					EnergyKcal100g:    539,
 					Proteins100g:      6.3,
 					Carbohydrates100g: 57.5,
@@ -28,7 +30,7 @@ func TestService_convertToProductData(t *testing.T) {
 					Fiber100g:         0,
 				},
 			},
-			expected: &ProductData{
+			expected: &barcode.ProductData{
 				Name:        "Nutella",
 				Description: "Ferrero - Hazelnut cocoa spread",
 				Calories:    539,
@@ -40,10 +42,10 @@ func TestService_convertToProductData(t *testing.T) {
 		},
 		{
 			name: "product with only brand",
-			product: &OpenFoodFactsProduct{
+			product: &barcode.OpenFoodFactsProduct{
 				ProductName: "Coca Cola",
 				Brands:      "Coca-Cola",
-				Nutriments: OpenFoodFactsNutriments{
+				Nutriments: barcode.OpenFoodFactsNutriments{
 					EnergyKcal100g:    42,
 					Proteins100g:      0,
 					Carbohydrates100g: 10.6,
@@ -51,7 +53,7 @@ func TestService_convertToProductData(t *testing.T) {
 					Fiber100g:         0,
 				},
 			},
-			expected: &ProductData{
+			expected: &barcode.ProductData{
 				Name:        "Coca Cola",
 				Description: "Coca-Cola",
 				Calories:    42,
@@ -63,10 +65,10 @@ func TestService_convertToProductData(t *testing.T) {
 		},
 		{
 			name: "product with only generic name",
-			product: &OpenFoodFactsProduct{
+			product: &barcode.OpenFoodFactsProduct{
 				ProductName: "Apple",
 				GenericName: "Fresh fruit",
-				Nutriments: OpenFoodFactsNutriments{
+				Nutriments: barcode.OpenFoodFactsNutriments{
 					EnergyKcal100g:    52,
 					Proteins100g:      0.3,
 					Carbohydrates100g: 14,
@@ -74,7 +76,7 @@ func TestService_convertToProductData(t *testing.T) {
 					Fiber100g:         2.4,
 				},
 			},
-			expected: &ProductData{
+			expected: &barcode.ProductData{
 				Name:        "Apple",
 				Description: "Fresh fruit",
 				Calories:    52,
@@ -86,9 +88,9 @@ func TestService_convertToProductData(t *testing.T) {
 		},
 		{
 			name: "product with no brand or generic name",
-			product: &OpenFoodFactsProduct{
+			product: &barcode.OpenFoodFactsProduct{
 				ProductName: "Mystery Product",
-				Nutriments: OpenFoodFactsNutriments{
+				Nutriments: barcode.OpenFoodFactsNutriments{
 					EnergyKcal100g:    100,
 					Proteins100g:      5,
 					Carbohydrates100g: 10,
@@ -96,7 +98,7 @@ func TestService_convertToProductData(t *testing.T) {
 					Fiber100g:         1,
 				},
 			},
-			expected: &ProductData{
+			expected: &barcode.ProductData{
 				Name:        "Mystery Product",
 				Description: "",
 				Calories:    100,
@@ -110,14 +112,14 @@ func TestService_convertToProductData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := service.convertToProductData(tt.product)
+			result := service.ConvertToProductData(tt.product)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
 func TestService_ScanBarcode_EmptyBarcode(t *testing.T) {
-	service := NewService()
+	service := barcode.NewService()
 
 	result, err := service.ScanBarcode("")
 	assert.Error(t, err)

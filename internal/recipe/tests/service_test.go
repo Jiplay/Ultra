@@ -1,27 +1,30 @@
-package recipe
+package tests
 
 import (
 	"context"
 	"testing"
 
+	"ultra-bis/internal/recipe"
+
+	"ultra-bis/test/testutil"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"ultra-bis/test/testutil"
 )
 
 // mockFoodProvider is a simple in-memory mock for testing
 type mockFoodProvider struct {
-	foods map[int]*Food
+	foods map[int]*recipe.Food
 }
 
 func newMockFoodProvider() *mockFoodProvider {
 	return &mockFoodProvider{
-		foods: make(map[int]*Food),
+		foods: make(map[int]*recipe.Food),
 	}
 }
 
 func (m *mockFoodProvider) addFood(id int, name string, calories, protein, carbs, fat, fiber float64) {
-	m.foods[id] = &Food{
+	m.foods[id] = &recipe.Food{
 		ID:          uint(id),
 		Name:        name,
 		Description: "Test food per 100g",
@@ -33,20 +36,20 @@ func (m *mockFoodProvider) addFood(id int, name string, calories, protein, carbs
 	}
 }
 
-func (m *mockFoodProvider) GetByID(id int) (*Food, error) {
+func (m *mockFoodProvider) GetByID(id int) (*recipe.Food, error) {
 	food, exists := m.foods[id]
 	if !exists {
-		return nil, ErrFoodNotFound
+		return nil, recipe.ErrFoodNotFound
 	}
 	return food, nil
 }
 
-func (m *mockFoodProvider) GetByIDs(ids []int) ([]*Food, error) {
-	result := make([]*Food, 0, len(ids))
+func (m *mockFoodProvider) GetByIDs(ids []int) ([]*recipe.Food, error) {
+	result := make([]*recipe.Food, 0, len(ids))
 	for _, id := range ids {
 		food, exists := m.foods[id]
 		if !exists {
-			return nil, ErrFoodNotFound
+			return nil, recipe.ErrFoodNotFound
 		}
 		result = append(result, food)
 	}
@@ -55,21 +58,21 @@ func (m *mockFoodProvider) GetByIDs(ids []int) ([]*Food, error) {
 
 func TestService_CreateRecipe_Success(t *testing.T) {
 	db := testutil.SetupTestDB(t)
-	db.AutoMigrate(&Recipe{}, &RecipeIngredient{})
+	db.AutoMigrate(&recipe.Recipe{}, &recipe.RecipeIngredient{})
 
 	mockFP := newMockFoodProvider()
 	mockFP.addFood(1, "Chicken", 165, 31, 0, 3.6, 0)
 	mockFP.addFood(2, "Rice", 130, 2.7, 28, 0.3, 0.4)
 
-	repo := NewRepository(db)
-	service := NewService(repo, mockFP, db)
+	repo := recipe.NewRepository(db)
+	service := recipe.NewService(repo, mockFP, db)
 
 	ctx := context.Background()
 	userID := uint(1)
 
-	req := CreateRecipeRequest{
+	req := recipe.CreateRecipeRequest{
 		Name: "Chicken & Rice",
-		Ingredients: []CreateIngredientRequest{
+		Ingredients: []recipe.CreateIngredientRequest{
 			{FoodID: 1, QuantityGrams: 200},
 			{FoodID: 2, QuantityGrams: 150},
 		},
@@ -86,49 +89,49 @@ func TestService_CreateRecipe_Success(t *testing.T) {
 
 func TestService_CreateRecipe_ValidationErrors(t *testing.T) {
 	db := testutil.SetupTestDB(t)
-	db.AutoMigrate(&Recipe{}, &RecipeIngredient{})
+	db.AutoMigrate(&recipe.Recipe{}, &recipe.RecipeIngredient{})
 
 	mockFP := newMockFoodProvider()
-	repo := NewRepository(db)
-	service := NewService(repo, mockFP, db)
+	repo := recipe.NewRepository(db)
+	service := recipe.NewService(repo, mockFP, db)
 
 	ctx := context.Background()
 	userID := uint(1)
 
 	tests := []struct {
 		name        string
-		req         CreateRecipeRequest
+		req         recipe.CreateRecipeRequest
 		expectedErr error
 	}{
 		{
 			name:        "empty name",
-			req:         CreateRecipeRequest{Name: ""},
-			expectedErr: ErrInvalidInput,
+			req:         recipe.CreateRecipeRequest{Name: ""},
+			expectedErr: recipe.ErrInvalidInput,
 		},
 		{
 			name:        "name too long",
-			req:         CreateRecipeRequest{Name: string(make([]byte, 300))},
-			expectedErr: ErrInvalidInput,
+			req:         recipe.CreateRecipeRequest{Name: string(make([]byte, 300))},
+			expectedErr: recipe.ErrInvalidInput,
 		},
 		{
 			name: "negative quantity",
-			req: CreateRecipeRequest{
+			req: recipe.CreateRecipeRequest{
 				Name: "Test",
-				Ingredients: []CreateIngredientRequest{
+				Ingredients: []recipe.CreateIngredientRequest{
 					{FoodID: 1, QuantityGrams: -10},
 				},
 			},
-			expectedErr: ErrInvalidInput,
+			expectedErr: recipe.ErrInvalidInput,
 		},
 		{
 			name: "quantity too large",
-			req: CreateRecipeRequest{
+			req: recipe.CreateRecipeRequest{
 				Name: "Test",
-				Ingredients: []CreateIngredientRequest{
+				Ingredients: []recipe.CreateIngredientRequest{
 					{FoodID: 1, QuantityGrams: 200000},
 				},
 			},
-			expectedErr: ErrInvalidInput,
+			expectedErr: recipe.ErrInvalidInput,
 		},
 	}
 
@@ -142,73 +145,73 @@ func TestService_CreateRecipe_ValidationErrors(t *testing.T) {
 
 func TestService_CreateRecipe_DuplicateFoods(t *testing.T) {
 	db := testutil.SetupTestDB(t)
-	db.AutoMigrate(&Recipe{}, &RecipeIngredient{})
+	db.AutoMigrate(&recipe.Recipe{}, &recipe.RecipeIngredient{})
 
 	mockFP := newMockFoodProvider()
 	mockFP.addFood(1, "Chicken", 165, 31, 0, 3.6, 0)
 
-	repo := NewRepository(db)
-	service := NewService(repo, mockFP, db)
+	repo := recipe.NewRepository(db)
+	service := recipe.NewService(repo, mockFP, db)
 
 	ctx := context.Background()
 	userID := uint(1)
 
-	req := CreateRecipeRequest{
+	req := recipe.CreateRecipeRequest{
 		Name: "Duplicate Test",
-		Ingredients: []CreateIngredientRequest{
+		Ingredients: []recipe.CreateIngredientRequest{
 			{FoodID: 1, QuantityGrams: 100},
 			{FoodID: 1, QuantityGrams: 200}, // Duplicate!
 		},
 	}
 
 	_, err := service.CreateRecipe(ctx, userID, req)
-	assert.ErrorIs(t, err, ErrInvalidInput)
+	assert.ErrorIs(t, err, recipe.ErrInvalidInput)
 	assert.Contains(t, err.Error(), "duplicate food ID")
 }
 
 func TestService_CreateRecipe_NonExistentFood(t *testing.T) {
 	db := testutil.SetupTestDB(t)
-	db.AutoMigrate(&Recipe{}, &RecipeIngredient{})
+	db.AutoMigrate(&recipe.Recipe{}, &recipe.RecipeIngredient{})
 
 	mockFP := newMockFoodProvider()
 	// Don't add food ID 99 to mock
 
-	repo := NewRepository(db)
-	service := NewService(repo, mockFP, db)
+	repo := recipe.NewRepository(db)
+	service := recipe.NewService(repo, mockFP, db)
 
 	ctx := context.Background()
 	userID := uint(1)
 
-	req := CreateRecipeRequest{
+	req := recipe.CreateRecipeRequest{
 		Name: "Invalid Recipe",
-		Ingredients: []CreateIngredientRequest{
+		Ingredients: []recipe.CreateIngredientRequest{
 			{FoodID: 99, QuantityGrams: 100},
 		},
 	}
 
 	_, err := service.CreateRecipe(ctx, userID, req)
-	assert.ErrorIs(t, err, ErrFoodNotFound)
+	assert.ErrorIs(t, err, recipe.ErrFoodNotFound)
 }
 
 func TestService_GetRecipe_Nutrition(t *testing.T) {
 	db := testutil.SetupTestDB(t)
-	db.AutoMigrate(&Recipe{}, &RecipeIngredient{})
+	db.AutoMigrate(&recipe.Recipe{}, &recipe.RecipeIngredient{})
 
 	mockFP := newMockFoodProvider()
 	mockFP.addFood(1, "Chicken", 165, 31, 0, 3.6, 0)
 	mockFP.addFood(2, "Rice", 130, 2.7, 28, 0.3, 0.4)
 
-	repo := NewRepository(db)
-	service := NewService(repo, mockFP, db)
+	repo := recipe.NewRepository(db)
+	service := recipe.NewService(repo, mockFP, db)
 
 	ctx := context.Background()
 	userID := uint(1)
 
 	// Create recipe with 200g chicken + 150g rice
-	recipe := &Recipe{
+	recipe := &recipe.Recipe{
 		Name:   "Test Recipe",
 		UserID: &userID,
-		Ingredients: []RecipeIngredient{
+		Ingredients: []recipe.RecipeIngredient{
 			{FoodID: 1, QuantityGrams: 200},
 			{FoodID: 2, QuantityGrams: 150},
 		},
@@ -236,52 +239,52 @@ func TestService_GetRecipe_Nutrition(t *testing.T) {
 
 func TestService_GetRecipe_Forbidden(t *testing.T) {
 	db := testutil.SetupTestDB(t)
-	db.AutoMigrate(&Recipe{}, &RecipeIngredient{})
+	db.AutoMigrate(&recipe.Recipe{}, &recipe.RecipeIngredient{})
 
 	mockFP := newMockFoodProvider()
-	repo := NewRepository(db)
-	service := NewService(repo, mockFP, db)
+	repo := recipe.NewRepository(db)
+	service := recipe.NewService(repo, mockFP, db)
 
 	ctx := context.Background()
 
 	// Create recipe owned by user 1
 	ownerID := uint(1)
-	recipe := &Recipe{
+	myrecipe := &recipe.Recipe{
 		Name:   "Private Recipe",
 		UserID: &ownerID,
 	}
-	repo.Create(recipe)
+	repo.Create(myrecipe)
 
 	// Try to access as user 2
 	otherUserID := uint(2)
-	_, err := service.GetRecipe(ctx, otherUserID, int(recipe.ID))
+	_, err := service.GetRecipe(ctx, otherUserID, int(myrecipe.ID))
 
-	assert.ErrorIs(t, err, ErrForbidden)
+	assert.ErrorIs(t, err, recipe.ErrForbidden)
 }
 
 func TestService_UpdateRecipe_Success(t *testing.T) {
 	db := testutil.SetupTestDB(t)
-	db.AutoMigrate(&Recipe{}, &RecipeIngredient{})
+	db.AutoMigrate(&recipe.Recipe{}, &recipe.RecipeIngredient{})
 
 	mockFP := newMockFoodProvider()
-	repo := NewRepository(db)
-	service := NewService(repo, mockFP, db)
+	repo := recipe.NewRepository(db)
+	service := recipe.NewService(repo, mockFP, db)
 
 	ctx := context.Background()
 	userID := uint(1)
 
 	// Create recipe
-	recipe := &Recipe{
+	myrecipe := &recipe.Recipe{
 		Name:   "Original Name",
 		UserID: &userID,
 	}
-	repo.Create(recipe)
+	repo.Create(myrecipe)
 
 	// Update recipe
-	req := UpdateRecipeRequest{
+	req := recipe.UpdateRecipeRequest{
 		Name: "Updated Name",
 	}
-	updated, err := service.UpdateRecipe(ctx, userID, int(recipe.ID), req)
+	updated, err := service.UpdateRecipe(ctx, userID, int(myrecipe.ID), req)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "Updated Name", updated.Name)
@@ -289,17 +292,17 @@ func TestService_UpdateRecipe_Success(t *testing.T) {
 
 func TestService_DeleteRecipe_Success(t *testing.T) {
 	db := testutil.SetupTestDB(t)
-	db.AutoMigrate(&Recipe{}, &RecipeIngredient{})
+	db.AutoMigrate(&recipe.Recipe{}, &recipe.RecipeIngredient{})
 
 	mockFP := newMockFoodProvider()
-	repo := NewRepository(db)
-	service := NewService(repo, mockFP, db)
+	repo := recipe.NewRepository(db)
+	service := recipe.NewService(repo, mockFP, db)
 
 	ctx := context.Background()
 	userID := uint(1)
 
 	// Create recipe
-	recipe := &Recipe{
+	recipe := &recipe.Recipe{
 		Name:   "To Delete",
 		UserID: &userID,
 	}
@@ -316,22 +319,22 @@ func TestService_DeleteRecipe_Success(t *testing.T) {
 
 // trackingFoodProvider wraps a food provider and tracks GetByIDs calls
 type trackingFoodProvider struct {
-	wrapped   FoodProvider
+	wrapped   recipe.FoodProvider
 	callCount int
 }
 
-func (t *trackingFoodProvider) GetByID(id int) (*Food, error) {
+func (t *trackingFoodProvider) GetByID(id int) (*recipe.Food, error) {
 	return t.wrapped.GetByID(id)
 }
 
-func (t *trackingFoodProvider) GetByIDs(ids []int) ([]*Food, error) {
+func (t *trackingFoodProvider) GetByIDs(ids []int) ([]*recipe.Food, error) {
 	t.callCount++
 	return t.wrapped.GetByIDs(ids)
 }
 
 func TestService_ListRecipes_BatchFetching(t *testing.T) {
 	db := testutil.SetupTestDB(t)
-	db.AutoMigrate(&Recipe{}, &RecipeIngredient{})
+	db.AutoMigrate(&recipe.Recipe{}, &recipe.RecipeIngredient{})
 
 	// Create base mock provider
 	baseMockFP := newMockFoodProvider()
@@ -341,24 +344,24 @@ func TestService_ListRecipes_BatchFetching(t *testing.T) {
 	// Wrap it with tracking
 	trackingFP := &trackingFoodProvider{wrapped: baseMockFP}
 
-	repo := NewRepository(db)
-	service := NewService(repo, trackingFP, db)
+	repo := recipe.NewRepository(db)
+	service := recipe.NewService(repo, trackingFP, db)
 
 	ctx := context.Background()
 	userID := uint(1)
 
 	// Create multiple recipes
-	recipe1 := &Recipe{
+	recipe1 := &recipe.Recipe{
 		Name:   "Recipe 1",
 		UserID: &userID,
-		Ingredients: []RecipeIngredient{
+		Ingredients: []recipe.RecipeIngredient{
 			{FoodID: 1, QuantityGrams: 100},
 		},
 	}
-	recipe2 := &Recipe{
+	recipe2 := &recipe.Recipe{
 		Name:   "Recipe 2",
 		UserID: &userID,
-		Ingredients: []RecipeIngredient{
+		Ingredients: []recipe.RecipeIngredient{
 			{FoodID: 2, QuantityGrams: 100},
 		},
 	}

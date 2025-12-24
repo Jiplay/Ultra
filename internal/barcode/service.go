@@ -64,13 +64,13 @@ func (s *Service) ScanBarcode(barcode string) (*ProductData, error) {
 	}
 
 	// Convert Open Food Facts data to our internal format
-	productData := s.convertToProductData(offResp.Product)
+	productData := s.ConvertToProductData(offResp.Product)
 
 	return productData, nil
 }
 
-// convertToProductData converts Open Food Facts product to our internal format
-func (s *Service) convertToProductData(product *OpenFoodFactsProduct) *ProductData {
+// ConvertToProductData converts Open Food Facts product to our internal format
+func (s *Service) ConvertToProductData(product *OpenFoodFactsProduct) *ProductData {
 	// Build description from brand and generic name
 	description := ""
 	if product.Brands != "" {

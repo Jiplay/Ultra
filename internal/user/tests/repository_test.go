@@ -1,10 +1,11 @@
-package user
+package tests
 
 import (
 	"context"
 	"fmt"
 	"testing"
 	"time"
+	"ultra-bis/internal/user"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +19,7 @@ import (
 
 // setupUserTest creates a test DB with User migrations
 // Note: We inline the testcontainer setup here to avoid import cycle with testutil
-func setupUserTest(t *testing.T) (*gorm.DB, *Repository) {
+func setupUserTest(t *testing.T) (*gorm.DB, *user.Repository) {
 	t.Helper()
 
 	ctx := context.Background()
@@ -61,18 +62,18 @@ func setupUserTest(t *testing.T) (*gorm.DB, *Repository) {
 	}
 
 	// Migrate User model
-	if err := db.AutoMigrate(&User{}); err != nil {
+	if err := db.AutoMigrate(&user.User{}); err != nil {
 		t.Fatalf("Failed to migrate database: %v", err)
 	}
 
-	return db, NewRepository(db)
+	return db, user.NewRepository(db)
 }
 
 // TestRepository_Create tests creating a new user
 func TestRepository_Create(t *testing.T) {
 	db, repo := setupUserTest(t)
 
-	user := &User{
+	user1 := &user.User{
 		Email:         "test@example.com",
 		Name:          "Test User",
 		Age:           30,
@@ -80,22 +81,22 @@ func TestRepository_Create(t *testing.T) {
 		Height:        175.0,
 		Weight:        75.0,
 		BodyFat:       15.0,
-		ActivityLevel: ModeratelyActive,
-		GoalType:      Maintain,
+		ActivityLevel: user.ModeratelyActive,
+		GoalType:      user.Maintain,
 	}
 
-	err := user.HashPassword("password123")
+	err := user1.HashPassword("password123")
 	require.NoError(t, err)
 
-	err = repo.Create(user)
+	err = repo.Create(user1)
 
 	assert.NoError(t, err)
-	assert.NotZero(t, user.ID, "User ID should be set after creation")
-	assert.NotEmpty(t, user.PasswordHash, "Password should be hashed")
+	assert.NotZero(t, user1.ID, "User ID should be set after creation")
+	assert.NotEmpty(t, user1.PasswordHash, "Password should be hashed")
 
 	// Verify user was created in database
-	var found User
-	db.First(&found, user.ID)
+	var found user.User
+	db.First(&found, user1.ID)
 	assert.Equal(t, "test@example.com", found.Email)
 	assert.Equal(t, "Test User", found.Name)
 	assert.Equal(t, 30, found.Age)
@@ -106,7 +107,7 @@ func TestRepository_Create_DuplicateEmail(t *testing.T) {
 	_, repo := setupUserTest(t)
 
 	// Create first user
-	user1 := &User{
+	user1 := &user.User{
 		Email: "duplicate@example.com",
 		Name:  "User One",
 	}
@@ -115,7 +116,7 @@ func TestRepository_Create_DuplicateEmail(t *testing.T) {
 	require.NoError(t, err)
 
 	// Try to create second user with same email
-	user2 := &User{
+	user2 := &user.User{
 		Email: "duplicate@example.com",
 		Name:  "User Two",
 	}
@@ -130,7 +131,7 @@ func TestRepository_Create_DuplicateEmail(t *testing.T) {
 func TestRepository_Create_MinimalFields(t *testing.T) {
 	_, repo := setupUserTest(t)
 
-	user := &User{
+	user := &user.User{
 		Email: "minimal@example.com",
 	}
 	user.HashPassword("password123")
@@ -146,7 +147,7 @@ func TestRepository_GetByID(t *testing.T) {
 	_, repo := setupUserTest(t)
 
 	// Create a test user
-	created := &User{
+	created := &user.User{
 		Email: "getbyid@example.com",
 		Name:  "Get By ID User",
 		Age:   25,
@@ -182,7 +183,7 @@ func TestRepository_GetByEmail(t *testing.T) {
 	_, repo := setupUserTest(t)
 
 	// Create a test user
-	created := &User{
+	created := &user.User{
 		Email: "findme@example.com",
 		Name:  "Find Me User",
 	}
@@ -216,7 +217,7 @@ func TestRepository_GetByEmail_CaseSensitive(t *testing.T) {
 	_, repo := setupUserTest(t)
 
 	// Create user with lowercase email
-	created := &User{
+	created := &user.User{
 		Email: "test@example.com",
 		Name:  "Test User",
 	}
@@ -243,30 +244,30 @@ func TestRepository_Update(t *testing.T) {
 	_, repo := setupUserTest(t)
 
 	// Create a test user
-	user := &User{
+	user1 := &user.User{
 		Email:  "update@example.com",
 		Name:   "Original Name",
 		Age:    25,
 		Height: 170.0,
 		Weight: 70.0,
 	}
-	user.HashPassword("password123")
-	err := repo.Create(user)
+	user1.HashPassword("password123")
+	err := repo.Create(user1)
 	require.NoError(t, err)
 
 	// Update user fields
-	user.Name = "Updated Name"
-	user.Age = 26
-	user.Height = 175.0
-	user.Weight = 72.0
-	user.BodyFat = 15.0
+	user1.Name = "Updated Name"
+	user1.Age = 26
+	user1.Height = 175.0
+	user1.Weight = 72.0
+	user1.BodyFat = 15.0
 
-	err = repo.Update(user)
+	err = repo.Update(user1)
 
 	assert.NoError(t, err)
 
 	// Verify updates in database
-	found, err := repo.GetByID(user.ID)
+	found, err := repo.GetByID(user1.ID)
 	require.NoError(t, err)
 	assert.Equal(t, "Updated Name", found.Name)
 	assert.Equal(t, 26, found.Age)
@@ -279,48 +280,48 @@ func TestRepository_Update(t *testing.T) {
 func TestRepository_Update_ActivityLevel(t *testing.T) {
 	_, repo := setupUserTest(t)
 
-	user := &User{
+	user1 := &user.User{
 		Email:         "activity@example.com",
-		ActivityLevel: Sedentary,
+		ActivityLevel: user.Sedentary,
 	}
-	user.HashPassword("password123")
-	err := repo.Create(user)
+	user1.HashPassword("password123")
+	err := repo.Create(user1)
 	require.NoError(t, err)
 
 	// Update activity level
-	user.ActivityLevel = VeryActive
+	user1.ActivityLevel = user.VeryActive
 
-	err = repo.Update(user)
+	err = repo.Update(user1)
 	assert.NoError(t, err)
 
 	// Verify update
-	found, err := repo.GetByID(user.ID)
+	found, err := repo.GetByID(user1.ID)
 	require.NoError(t, err)
-	assert.Equal(t, VeryActive, found.ActivityLevel)
+	assert.Equal(t, user.VeryActive, found.ActivityLevel)
 }
 
 // TestRepository_Update_GoalType tests updating goal type
 func TestRepository_Update_GoalType(t *testing.T) {
 	_, repo := setupUserTest(t)
 
-	user := &User{
+	user1 := &user.User{
 		Email:    "goal@example.com",
-		GoalType: Maintain,
+		GoalType: user.Maintain,
 	}
-	user.HashPassword("password123")
-	err := repo.Create(user)
+	user1.HashPassword("password123")
+	err := repo.Create(user1)
 	require.NoError(t, err)
 
 	// Update goal type
-	user.GoalType = Lose
+	user1.GoalType = user.Lose
 
-	err = repo.Update(user)
+	err = repo.Update(user1)
 	assert.NoError(t, err)
 
 	// Verify update
-	found, err := repo.GetByID(user.ID)
+	found, err := repo.GetByID(user1.ID)
 	require.NoError(t, err)
-	assert.Equal(t, Lose, found.GoalType)
+	assert.Equal(t, user.Lose, found.GoalType)
 }
 
 // TestRepository_EmailExists tests checking if an email exists
@@ -328,11 +329,11 @@ func TestRepository_EmailExists(t *testing.T) {
 	_, repo := setupUserTest(t)
 
 	// Create a test user
-	user := &User{
+	user1 := &user.User{
 		Email: "exists@example.com",
 	}
-	user.HashPassword("password123")
-	err := repo.Create(user)
+	user1.HashPassword("password123")
+	err := repo.Create(user1)
 	require.NoError(t, err)
 
 	// Check if email exists
@@ -359,9 +360,9 @@ func TestRepository_EmailExists_MultipleUsers(t *testing.T) {
 	// Create multiple users
 	emails := []string{"user1@example.com", "user2@example.com", "user3@example.com"}
 	for _, email := range emails {
-		user := &User{Email: email}
-		user.HashPassword("password123")
-		err := repo.Create(user)
+		user1 := &user.User{Email: email}
+		user1.HashPassword("password123")
+		err := repo.Create(user1)
 		require.NoError(t, err)
 	}
 
@@ -380,22 +381,22 @@ func TestRepository_EmailExists_MultipleUsers(t *testing.T) {
 
 // TestUser_HashPassword tests password hashing functionality
 func TestUser_HashPassword(t *testing.T) {
-	user := &User{
+	user1 := &user.User{
 		Email: "test@example.com",
 	}
 
 	password := "mySecurePassword123!"
-	err := user.HashPassword(password)
+	err := user1.HashPassword(password)
 
 	assert.NoError(t, err)
-	assert.NotEmpty(t, user.PasswordHash, "Password hash should be set")
-	assert.NotEqual(t, password, user.PasswordHash, "Hash should not equal plain password")
-	assert.Greater(t, len(user.PasswordHash), 50, "Bcrypt hash should be long")
+	assert.NotEmpty(t, user1.PasswordHash, "Password hash should be set")
+	assert.NotEqual(t, password, user1.PasswordHash, "Hash should not equal plain password")
+	assert.Greater(t, len(user1.PasswordHash), 50, "Bcrypt hash should be long")
 }
 
 // TestUser_HashPassword_EmptyPassword tests hashing an empty password
 func TestUser_HashPassword_EmptyPassword(t *testing.T) {
-	user := &User{
+	user := &user.User{
 		Email: "test@example.com",
 	}
 
@@ -408,49 +409,49 @@ func TestUser_HashPassword_EmptyPassword(t *testing.T) {
 
 // TestUser_CheckPassword tests password verification
 func TestUser_CheckPassword(t *testing.T) {
-	user := &User{
+	user1 := &user.User{
 		Email: "test@example.com",
 	}
 
 	password := "correctPassword123"
-	err := user.HashPassword(password)
+	err := user1.HashPassword(password)
 	require.NoError(t, err)
 
 	// Test correct password
-	isValid := user.CheckPassword(password)
+	isValid := user1.CheckPassword(password)
 	assert.True(t, isValid, "Correct password should validate")
 
 	// Test incorrect password
-	isValid = user.CheckPassword("wrongPassword")
+	isValid = user1.CheckPassword("wrongPassword")
 	assert.False(t, isValid, "Incorrect password should not validate")
 }
 
 // TestUser_CheckPassword_CaseSensitive tests password case sensitivity
 func TestUser_CheckPassword_CaseSensitive(t *testing.T) {
-	user := &User{
+	user1 := &user.User{
 		Email: "test@example.com",
 	}
 
 	password := "MyPassword123"
-	err := user.HashPassword(password)
+	err := user1.HashPassword(password)
 	require.NoError(t, err)
 
 	// Test with different case
-	isValid := user.CheckPassword("mypassword123")
+	isValid := user1.CheckPassword("mypassword123")
 	assert.False(t, isValid, "Password should be case-sensitive")
 
-	isValid = user.CheckPassword("MYPASSWORD123")
+	isValid = user1.CheckPassword("MYPASSWORD123")
 	assert.False(t, isValid, "Password should be case-sensitive")
 }
 
 // TestUser_CheckPassword_BeforeHash tests checking password before hashing
 func TestUser_CheckPassword_BeforeHash(t *testing.T) {
-	user := &User{
+	user1 := &user.User{
 		Email: "test@example.com",
 	}
 
 	// Try to check password before hashing
-	isValid := user.CheckPassword("anyPassword")
+	isValid := user1.CheckPassword("anyPassword")
 	assert.False(t, isValid, "Should return false when no hash is set")
 }
 
@@ -458,28 +459,28 @@ func TestUser_CheckPassword_BeforeHash(t *testing.T) {
 func TestRepository_Create_AllActivityLevels(t *testing.T) {
 	db, repo := setupUserTest(t)
 
-	activityLevels := []ActivityLevel{
-		Sedentary,
-		LightlyActive,
-		ModeratelyActive,
-		VeryActive,
-		ExtraActive,
+	activityLevels := []user.ActivityLevel{
+		user.Sedentary,
+		user.LightlyActive,
+		user.ModeratelyActive,
+		user.VeryActive,
+		user.ExtraActive,
 	}
 
 	for i, level := range activityLevels {
-		user := &User{
+		user1 := &user.User{
 			Email:         testEmail(i),
 			Name:          "Test User",
 			ActivityLevel: level,
 		}
-		user.HashPassword("password123")
+		user1.HashPassword("password123")
 
-		err := repo.Create(user)
+		err := repo.Create(user1)
 		assert.NoError(t, err, "Should create user with activity level %s", level)
 
 		// Verify in database
-		var found User
-		db.First(&found, user.ID)
+		var found user.User
+		db.First(&found, user1.ID)
 		assert.Equal(t, level, found.ActivityLevel)
 	}
 }
@@ -488,26 +489,26 @@ func TestRepository_Create_AllActivityLevels(t *testing.T) {
 func TestRepository_Create_AllGoalTypes(t *testing.T) {
 	db, repo := setupUserTest(t)
 
-	goalTypes := []GoalType{
-		Maintain,
-		Lose,
-		Gain,
+	goalTypes := []user.GoalType{
+		user.Maintain,
+		user.Lose,
+		user.Gain,
 	}
 
 	for i, goalType := range goalTypes {
-		user := &User{
+		user1 := &user.User{
 			Email:    testEmail(100 + i),
 			Name:     "Test User",
 			GoalType: goalType,
 		}
-		user.HashPassword("password123")
+		user1.HashPassword("password123")
 
-		err := repo.Create(user)
+		err := repo.Create(user1)
 		assert.NoError(t, err, "Should create user with goal type %s", goalType)
 
 		// Verify in database
-		var found User
-		db.First(&found, user.ID)
+		var found user.User
+		db.First(&found, user1.ID)
 		assert.Equal(t, goalType, found.GoalType)
 	}
 }
@@ -517,28 +518,28 @@ func TestRepository_Update_CompleteProfile(t *testing.T) {
 	_, repo := setupUserTest(t)
 
 	// Create user with minimal data
-	user := &User{
+	user1 := &user.User{
 		Email: "complete@example.com",
 	}
-	user.HashPassword("password123")
-	err := repo.Create(user)
+	user1.HashPassword("password123")
+	err := repo.Create(user1)
 	require.NoError(t, err)
 
 	// Update with complete profile
-	user.Name = "Complete User"
-	user.Age = 30
-	user.Gender = "male"
-	user.Height = 175.0
-	user.Weight = 75.0
-	user.BodyFat = 15.0
-	user.ActivityLevel = ModeratelyActive
-	user.GoalType = Lose
+	user1.Name = "Complete User"
+	user1.Age = 30
+	user1.Gender = "male"
+	user1.Height = 175.0
+	user1.Weight = 75.0
+	user1.BodyFat = 15.0
+	user1.ActivityLevel = user.ModeratelyActive
+	user1.GoalType = user.Lose
 
-	err = repo.Update(user)
+	err = repo.Update(user1)
 	assert.NoError(t, err)
 
 	// Verify all fields
-	found, err := repo.GetByID(user.ID)
+	found, err := repo.GetByID(user1.ID)
 	require.NoError(t, err)
 	assert.Equal(t, "Complete User", found.Name)
 	assert.Equal(t, 30, found.Age)
@@ -546,35 +547,35 @@ func TestRepository_Update_CompleteProfile(t *testing.T) {
 	assert.Equal(t, 175.0, found.Height)
 	assert.Equal(t, 75.0, found.Weight)
 	assert.Equal(t, 15.0, found.BodyFat)
-	assert.Equal(t, ModeratelyActive, found.ActivityLevel)
-	assert.Equal(t, Lose, found.GoalType)
+	assert.Equal(t, user.ModeratelyActive, found.ActivityLevel)
+	assert.Equal(t, user.Lose, found.GoalType)
 }
 
 // TestRepository_Update_PasswordNotChanged tests that password is preserved during updates
 func TestRepository_Update_PasswordNotChanged(t *testing.T) {
 	_, repo := setupUserTest(t)
 
-	user := &User{
+	user1 := &user.User{
 		Email: "password@example.com",
 		Name:  "Original Name",
 	}
 	originalPassword := "originalPassword123"
-	err := user.HashPassword(originalPassword)
+	err := user1.HashPassword(originalPassword)
 	require.NoError(t, err)
-	originalHash := user.PasswordHash
+	originalHash := user1.PasswordHash
 
-	err = repo.Create(user)
+	err = repo.Create(user1)
 	require.NoError(t, err)
 
 	// Update other fields but not password
-	user.Name = "Updated Name"
-	user.Age = 30
+	user1.Name = "Updated Name"
+	user1.Age = 30
 
-	err = repo.Update(user)
+	err = repo.Update(user1)
 	assert.NoError(t, err)
 
 	// Verify password hash hasn't changed
-	found, err := repo.GetByID(user.ID)
+	found, err := repo.GetByID(user1.ID)
 	require.NoError(t, err)
 	assert.Equal(t, originalHash, found.PasswordHash, "Password hash should remain unchanged")
 	assert.True(t, found.CheckPassword(originalPassword), "Original password should still work")
@@ -584,27 +585,27 @@ func TestRepository_Update_PasswordNotChanged(t *testing.T) {
 func TestRepository_Update_ChangePassword(t *testing.T) {
 	_, repo := setupUserTest(t)
 
-	user := &User{
+	user1 := &user.User{
 		Email: "changepass@example.com",
 	}
 	oldPassword := "oldPassword123"
-	err := user.HashPassword(oldPassword)
+	err := user1.HashPassword(oldPassword)
 	require.NoError(t, err)
-	oldHash := user.PasswordHash
+	oldHash := user1.PasswordHash
 
-	err = repo.Create(user)
+	err = repo.Create(user1)
 	require.NoError(t, err)
 
 	// Change password
 	newPassword := "newPassword456"
-	err = user.HashPassword(newPassword)
+	err = user1.HashPassword(newPassword)
 	require.NoError(t, err)
 
-	err = repo.Update(user)
+	err = repo.Update(user1)
 	assert.NoError(t, err)
 
 	// Verify password changed
-	found, err := repo.GetByID(user.ID)
+	found, err := repo.GetByID(user1.ID)
 	require.NoError(t, err)
 	assert.NotEqual(t, oldHash, found.PasswordHash, "Password hash should have changed")
 	assert.False(t, found.CheckPassword(oldPassword), "Old password should not work")

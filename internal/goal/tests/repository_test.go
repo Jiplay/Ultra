@@ -1,27 +1,31 @@
-package goal
+package tests
 
 import (
 	"testing"
 	"time"
 
+	"ultra-bis/internal/goal"
+
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
+
 	"ultra-bis/internal/user"
 	"ultra-bis/test/testutil"
+
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
 // setupGoalTest creates a test DB with Goal and User migrations
-func setupGoalTest(t *testing.T) (*gorm.DB, *Repository) {
+func setupGoalTest(t *testing.T) (*gorm.DB, *goal.Repository) {
 	t.Helper()
 	db := testutil.SetupTestDB(t)
 
 	// Migrate both User and NutritionGoal models
-	if err := db.AutoMigrate(&user.User{}, &NutritionGoal{}); err != nil {
+	if err := db.AutoMigrate(&user.User{}, &goal.NutritionGoal{}); err != nil {
 		t.Fatalf("Failed to migrate database: %v", err)
 	}
 
-	return db, NewRepository(db)
+	return db, goal.NewRepository(db)
 }
 
 // TestRepository_Create tests creating a new nutrition goal
@@ -31,7 +35,7 @@ func TestRepository_Create(t *testing.T) {
 	// Create test user
 	testUser := testutil.CreateTestUser(t, db)
 
-	goal := &NutritionGoal{
+	mygoal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -42,14 +46,14 @@ func TestRepository_Create(t *testing.T) {
 		IsActive:  true,
 	}
 
-	err := repo.Create(goal)
+	err := repo.Create(mygoal)
 
 	assert.NoError(t, err)
-	assert.NotZero(t, goal.ID, "Goal ID should be set after creation")
+	assert.NotZero(t, mygoal.ID, "Goal ID should be set after creation")
 
 	// Verify goal was created in database
-	var found NutritionGoal
-	db.First(&found, goal.ID)
+	var found goal.NutritionGoal
+	db.First(&found, mygoal.ID)
 	assert.Equal(t, testUser.ID, found.UserID)
 	testutil.AssertNutritionEquals(t, 2000, found.Calories, "calories")
 	testutil.AssertNutritionEquals(t, 150, found.Protein, "protein")
@@ -63,7 +67,7 @@ func TestRepository_Create_DeactivatesPreviousGoal(t *testing.T) {
 	testUser := testutil.CreateTestUser(t, db)
 
 	// Create first goal (active)
-	goal1 := &NutritionGoal{
+	goal1 := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -77,12 +81,12 @@ func TestRepository_Create_DeactivatesPreviousGoal(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify first goal is active
-	var firstGoal NutritionGoal
+	var firstGoal goal.NutritionGoal
 	db.First(&firstGoal, goal1.ID)
 	assert.True(t, firstGoal.IsActive, "First goal should be active initially")
 
 	// Create second goal (should auto-deactivate first)
-	goal2 := &NutritionGoal{
+	goal2 := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2200,
 		Protein:   165,
@@ -100,13 +104,13 @@ func TestRepository_Create_DeactivatesPreviousGoal(t *testing.T) {
 	assert.False(t, firstGoal.IsActive, "First goal should be deactivated")
 
 	// Verify second goal is active
-	var secondGoal NutritionGoal
+	var secondGoal goal.NutritionGoal
 	db.First(&secondGoal, goal2.ID)
 	assert.True(t, secondGoal.IsActive, "Second goal should be active")
 
 	// Verify only one active goal exists for this user
 	var activeCount int64
-	db.Model(&NutritionGoal{}).Where("user_id = ? AND is_active = ?", testUser.ID, true).Count(&activeCount)
+	db.Model(&goal.NutritionGoal{}).Where("user_id = ? AND is_active = ?", testUser.ID, true).Count(&activeCount)
 	assert.Equal(t, int64(1), activeCount, "Only one goal should be active")
 }
 
@@ -118,7 +122,7 @@ func TestRepository_Create_MultipleUsers(t *testing.T) {
 	user2 := testutil.CreateTestUser(t, db, "user2@example.com")
 
 	// Create goal for user1
-	goal1 := &NutritionGoal{
+	goal1 := &goal.NutritionGoal{
 		UserID:    user1.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -132,7 +136,7 @@ func TestRepository_Create_MultipleUsers(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create goal for user2
-	goal2 := &NutritionGoal{
+	goal2 := &goal.NutritionGoal{
 		UserID:    user2.ID,
 		Calories:  1800,
 		Protein:   130,
@@ -146,7 +150,7 @@ func TestRepository_Create_MultipleUsers(t *testing.T) {
 	require.NoError(t, err)
 
 	// Both goals should remain active (different users)
-	var goal1Check, goal2Check NutritionGoal
+	var goal1Check, goal2Check goal.NutritionGoal
 	db.First(&goal1Check, goal1.ID)
 	db.First(&goal2Check, goal2.ID)
 
@@ -161,7 +165,7 @@ func TestRepository_GetActive(t *testing.T) {
 	testUser := testutil.CreateTestUser(t, db)
 
 	// Create active goal directly
-	testGoal := &NutritionGoal{
+	testGoal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -188,7 +192,7 @@ func TestRepository_GetActive_NoActiveGoal(t *testing.T) {
 	testUser := testutil.CreateTestUser(t, db)
 
 	// Create inactive goal - explicitly set to false after creation to override GORM default
-	inactiveGoal := &NutritionGoal{
+	inactiveGoal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -219,7 +223,7 @@ func TestRepository_GetActive_WrongUser(t *testing.T) {
 	user2 := testutil.CreateTestUser(t, db, "user2@example.com")
 
 	// Create goal for user1
-	goal := &NutritionGoal{
+	goal := &goal.NutritionGoal{
 		UserID:    user1.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -243,7 +247,7 @@ func TestRepository_GetByID(t *testing.T) {
 	db, repo := setupGoalTest(t)
 
 	testUser := testutil.CreateTestUser(t, db)
-	testGoal := &NutritionGoal{
+	testGoal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -284,7 +288,7 @@ func TestRepository_GetByID_WrongUser(t *testing.T) {
 	user2 := testutil.CreateTestUser(t, db, "user2@example.com")
 
 	// Create goal for user1
-	goal := &NutritionGoal{
+	goal := &goal.NutritionGoal{
 		UserID:    user1.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -311,9 +315,9 @@ func TestRepository_GetAll(t *testing.T) {
 	testUser := testutil.CreateTestUser(t, db)
 
 	// Create multiple goals
-	goals := make([]*NutritionGoal, 3)
+	goals := make([]*goal.NutritionGoal, 3)
 	for i := 0; i < 3; i++ {
-		goal := &NutritionGoal{
+		goal := &goal.NutritionGoal{
 			UserID:    testUser.ID,
 			Calories:  float64(1800 + (i * 100)),
 			Protein:   float64(130 + (i * 10)),
@@ -357,7 +361,7 @@ func TestRepository_GetAll_OnlyUserGoals(t *testing.T) {
 
 	// Create goals for user1
 	for i := 0; i < 2; i++ {
-		goal := &NutritionGoal{
+		goal := &goal.NutritionGoal{
 			UserID:    user1.ID,
 			Calories:  2000,
 			Protein:   150,
@@ -372,7 +376,7 @@ func TestRepository_GetAll_OnlyUserGoals(t *testing.T) {
 
 	// Create goals for user2
 	for i := 0; i < 3; i++ {
-		goal := &NutritionGoal{
+		goal := &goal.NutritionGoal{
 			UserID:    user2.ID,
 			Calories:  1800,
 			Protein:   130,
@@ -402,7 +406,7 @@ func TestRepository_Update(t *testing.T) {
 	db, repo := setupGoalTest(t)
 
 	testUser := testutil.CreateTestUser(t, db)
-	testGoal := &NutritionGoal{
+	testGoal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -425,7 +429,7 @@ func TestRepository_Update(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify updates in database
-	var updated NutritionGoal
+	var updated goal.NutritionGoal
 	db.First(&updated, testGoal.ID)
 	testutil.AssertNutritionEquals(t, 2200, updated.Calories, "calories")
 	testutil.AssertNutritionEquals(t, 165, updated.Protein, "protein")
@@ -438,7 +442,7 @@ func TestRepository_Update_EndDate(t *testing.T) {
 	db, repo := setupGoalTest(t)
 
 	testUser := testutil.CreateTestUser(t, db)
-	testGoal := &NutritionGoal{
+	testGoal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -459,7 +463,7 @@ func TestRepository_Update_EndDate(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify end date was set
-	var updated NutritionGoal
+	var updated goal.NutritionGoal
 	db.First(&updated, testGoal.ID)
 	require.NotNil(t, updated.EndDate)
 	assert.Equal(t, endDate.Format("2006-01-02"), updated.EndDate.Format("2006-01-02"))
@@ -470,7 +474,7 @@ func TestRepository_Delete(t *testing.T) {
 	db, repo := setupGoalTest(t)
 
 	testUser := testutil.CreateTestUser(t, db)
-	testGoal := &NutritionGoal{
+	testGoal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -492,7 +496,7 @@ func TestRepository_Delete(t *testing.T) {
 	assert.Nil(t, found)
 
 	// Verify goal still exists in database with DeletedAt set
-	var deleted NutritionGoal
+	var deleted goal.NutritionGoal
 	db.Unscoped().First(&deleted, testGoal.ID)
 	assert.NotNil(t, deleted.DeletedAt)
 }
@@ -517,7 +521,7 @@ func TestRepository_Delete_WrongUser(t *testing.T) {
 	user2 := testutil.CreateTestUser(t, db, "user2@example.com")
 
 	// Create goal for user1
-	goal := &NutritionGoal{
+	goal := &goal.NutritionGoal{
 		UserID:    user1.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -550,7 +554,7 @@ func TestRepository_GetForDate(t *testing.T) {
 	// Create goal with date range
 	startDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	endDate := time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC)
-	goal := &NutritionGoal{
+	goal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -580,7 +584,7 @@ func TestRepository_GetForDate_StartDateBoundary(t *testing.T) {
 
 	startDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	endDate := time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC)
-	goal := &NutritionGoal{
+	goal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -609,7 +613,7 @@ func TestRepository_GetForDate_EndDateBoundary(t *testing.T) {
 
 	startDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	endDate := time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC)
-	goal := &NutritionGoal{
+	goal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -638,7 +642,7 @@ func TestRepository_GetForDate_BeforeStartDate(t *testing.T) {
 
 	startDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	endDate := time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC)
-	goal := &NutritionGoal{
+	goal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -668,7 +672,7 @@ func TestRepository_GetForDate_AfterEndDate(t *testing.T) {
 
 	startDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	endDate := time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC)
-	goal := &NutritionGoal{
+	goal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -697,7 +701,7 @@ func TestRepository_GetForDate_NoEndDate(t *testing.T) {
 	testUser := testutil.CreateTestUser(t, db)
 
 	startDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	goal := &NutritionGoal{
+	goal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -740,7 +744,7 @@ func TestRepository_ConcurrentCreate(t *testing.T) {
 	testUser := testutil.CreateTestUser(t, db)
 
 	// Create first goal
-	goal1 := &NutritionGoal{
+	goal1 := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -754,7 +758,7 @@ func TestRepository_ConcurrentCreate(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create second goal (simulating concurrent request)
-	goal2 := &NutritionGoal{
+	goal2 := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2200,
 		Protein:   165,
@@ -769,7 +773,7 @@ func TestRepository_ConcurrentCreate(t *testing.T) {
 
 	// Verify only one active goal exists
 	var activeCount int64
-	db.Model(&NutritionGoal{}).Where("user_id = ? AND is_active = ?", testUser.ID, true).Count(&activeCount)
+	db.Model(&goal.NutritionGoal{}).Where("user_id = ? AND is_active = ?", testUser.ID, true).Count(&activeCount)
 	assert.Equal(t, int64(1), activeCount, "Only one goal should be active after concurrent creates")
 
 	// Verify it's the most recent one
@@ -789,7 +793,7 @@ func TestRepository_Create_WithProtocolTracking(t *testing.T) {
 	phase := 2
 	expirationDate := time.Now().AddDate(0, 0, 14)
 
-	goal := &NutritionGoal{
+	mygoal := &goal.NutritionGoal{
 		UserID:         testUser.ID,
 		Calories:       2884,
 		Protein:        134,
@@ -804,14 +808,14 @@ func TestRepository_Create_WithProtocolTracking(t *testing.T) {
 		ExpirationDate: &expirationDate,
 	}
 
-	err := repo.Create(goal)
+	err := repo.Create(mygoal)
 
 	assert.NoError(t, err)
-	assert.NotZero(t, goal.ID, "Goal ID should be set after creation")
+	assert.NotZero(t, mygoal.ID, "Goal ID should be set after creation")
 
 	// Verify protocol tracking fields were saved
-	var found NutritionGoal
-	db.First(&found, goal.ID)
+	var found goal.NutritionGoal
+	db.First(&found, mygoal.ID)
 	assert.Equal(t, testUser.ID, found.UserID)
 
 	// Verify protocol tracking fields
@@ -834,7 +838,7 @@ func TestRepository_Create_WithoutProtocolTracking(t *testing.T) {
 
 	testUser := testutil.CreateTestUser(t, db)
 
-	goal := &NutritionGoal{
+	mygoal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2200,
 		Protein:   165,
@@ -846,14 +850,14 @@ func TestRepository_Create_WithoutProtocolTracking(t *testing.T) {
 		// No protocol tracking fields
 	}
 
-	err := repo.Create(goal)
+	err := repo.Create(mygoal)
 
 	assert.NoError(t, err)
-	assert.NotZero(t, goal.ID, "Goal ID should be set after creation")
+	assert.NotZero(t, mygoal.ID, "Goal ID should be set after creation")
 
 	// Verify protocol tracking fields are nil
-	var found NutritionGoal
-	db.First(&found, goal.ID)
+	var found goal.NutritionGoal
+	db.First(&found, mygoal.ID)
 	assert.Nil(t, found.DietModel, "DietModel should be nil for manual goal")
 	assert.Nil(t, found.Protocol, "Protocol should be nil for manual goal")
 	assert.Nil(t, found.Phase, "Phase should be nil for manual goal")
@@ -870,7 +874,7 @@ func TestRepository_Create_WithProtocolNoPhase(t *testing.T) {
 	protocol := 2
 	expirationDate := time.Now().AddDate(0, 0, 14)
 
-	goal := &NutritionGoal{
+	mygoal := &goal.NutritionGoal{
 		UserID:         testUser.ID,
 		Calories:       2384,
 		Protein:        134,
@@ -885,13 +889,13 @@ func TestRepository_Create_WithProtocolNoPhase(t *testing.T) {
 		ExpirationDate: &expirationDate,
 	}
 
-	err := repo.Create(goal)
+	err := repo.Create(mygoal)
 
 	assert.NoError(t, err)
 
 	// Verify protocol tracking without phase
-	var found NutritionGoal
-	db.First(&found, goal.ID)
+	var found goal.NutritionGoal
+	db.First(&found, mygoal.ID)
 
 	require.NotNil(t, found.DietModel)
 	assert.Equal(t, "zeroToHero", *found.DietModel)
@@ -915,7 +919,7 @@ func TestRepository_GetActive_WithProtocolTracking(t *testing.T) {
 	phase := 1
 	expirationDate := time.Now().AddDate(0, 0, 14)
 
-	testGoal := &NutritionGoal{
+	testGoal := &goal.NutritionGoal{
 		UserID:         testUser.ID,
 		Calories:       2384,
 		Protein:        134,
@@ -958,7 +962,7 @@ func TestRepository_GetAll_MixedProtocolTracking(t *testing.T) {
 	testUser := testutil.CreateTestUser(t, db)
 
 	// Create manual goal without protocol tracking
-	manualGoal := &NutritionGoal{
+	manualGoal := &goal.NutritionGoal{
 		UserID:    testUser.ID,
 		Calories:  2000,
 		Protein:   150,
@@ -976,7 +980,7 @@ func TestRepository_GetAll_MixedProtocolTracking(t *testing.T) {
 	phase := 1
 	expirationDate := time.Now().AddDate(0, 0, 14)
 
-	calculatedGoal := &NutritionGoal{
+	calculatedGoal := &goal.NutritionGoal{
 		UserID:         testUser.ID,
 		Calories:       2384,
 		Protein:        134,
@@ -1025,7 +1029,7 @@ func TestRepository_GetByID_WithProtocolTracking(t *testing.T) {
 	phase := 3
 	expirationDate := time.Now().AddDate(0, 0, 14)
 
-	testGoal := &NutritionGoal{
+	testGoal := &goal.NutritionGoal{
 		UserID:         testUser.ID,
 		Calories:       3084,
 		Protein:        134,
@@ -1071,7 +1075,7 @@ func TestRepository_Update_ProtocolTracking(t *testing.T) {
 	phase := 1
 	expirationDate := time.Now().AddDate(0, 0, 14)
 
-	testGoal := &NutritionGoal{
+	testGoal := &goal.NutritionGoal{
 		UserID:         testUser.ID,
 		Calories:       2384,
 		Protein:        134,
@@ -1096,7 +1100,7 @@ func TestRepository_Update_ProtocolTracking(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify protocol tracking fields remain unchanged
-	var updated NutritionGoal
+	var updated goal.NutritionGoal
 	db.First(&updated, testGoal.ID)
 
 	testutil.AssertNutritionEquals(t, 2500, updated.Calories, "calories")
