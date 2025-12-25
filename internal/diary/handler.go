@@ -25,6 +25,25 @@ type Handler struct {
 type RecipeRepository interface {
 	GetByID(id int) (Recipe, error)
 	GetIngredients(recipeID int) ([]RecipeIngredient, error)
+	CreateRecipe(userID uint, name string, tag string, ingredients []RecipeIngredientRequest) (RecipeCreatedResponse, error)
+}
+
+// RecipeIngredientRequest represents an ingredient request for recipe creation
+type RecipeIngredientRequest struct {
+	FoodID        uint
+	QuantityGrams float64
+}
+
+// RecipeCreatedResponse represents the response after creating a recipe
+type RecipeCreatedResponse struct {
+	ID            uint
+	Name          string
+	Tag           string
+	TotalCalories float64
+	TotalProtein  float64
+	TotalCarbs    float64
+	TotalFat      float64
+	TotalFiber    float64
 }
 
 // Recipe represents a recipe with basic info
@@ -75,22 +94,77 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validation
-	if req.FoodID == nil && req.RecipeID == nil {
-		httputil.WriteError(w, http.StatusBadRequest, "Either food_id or recipe_id is required")
+	// Validation: Count which entry type is being used
+	entryTypes := 0
+	if req.FoodID != nil {
+		entryTypes++
+	}
+	if req.RecipeID != nil {
+		entryTypes++
+	}
+	if req.InlineRecipeName != "" {
+		entryTypes++
+	}
+	if req.InlineFoodName != "" {
+		entryTypes++
+	}
+
+	// Require exactly one
+	if entryTypes == 0 {
+		httputil.WriteError(w, http.StatusBadRequest, "One of food_id, recipe_id, inline_recipe_name, or inline_food_name is required")
+		return
+	}
+
+	if entryTypes > 1 {
+		httputil.WriteError(w, http.StatusBadRequest, "Cannot specify multiple entry types")
+		return
+	}
+
+	// Validate inline food fields if inline_food_name is provided
+	if req.InlineFoodName != "" {
+		// Validate nutrition values (must be non-negative)
+		if req.InlineFoodCalories < 0 || req.InlineFoodProtein < 0 || req.InlineFoodCarbs < 0 ||
+			req.InlineFoodFat < 0 || req.InlineFoodFiber < 0 {
+			httputil.WriteError(w, http.StatusBadRequest, "Inline food nutrition values must be non-negative")
+			return
+		}
+
+		if req.QuantityGrams <= 0 {
+			httputil.WriteError(w, http.StatusBadRequest, "quantity_grams must be greater than 0 for inline food entries")
+			return
+		}
+
+		// Validate tag if provided
+		if req.InlineFoodTag != "" && req.InlineFoodTag != "routine" && req.InlineFoodTag != "contextual" {
+			httputil.WriteError(w, http.StatusBadRequest, "inline_food_tag must be 'routine' or 'contextual'")
+			return
+		}
+	}
+
+	// For inline recipes, custom_ingredients are REQUIRED
+	if req.InlineRecipeName != "" && len(req.CustomIngredients) == 0 {
+		httputil.WriteError(w, http.StatusBadRequest, "custom_ingredients are required for inline recipes")
 		return
 	}
 
 	// For food entries, quantity_grams is required
-	// For recipe entries, either quantity_grams or custom_ingredients is required
 	if req.FoodID != nil && req.QuantityGrams <= 0 {
 		httputil.WriteError(w, http.StatusBadRequest, "Quantity in grams must be greater than 0 for food entries")
 		return
 	}
 
+	// For saved recipes, either quantity_grams or custom_ingredients required
 	if req.RecipeID != nil && req.QuantityGrams <= 0 && len(req.CustomIngredients) == 0 {
-		httputil.WriteError(w, http.StatusBadRequest, "Either quantity_grams or custom_ingredients is required for recipe entries")
+		httputil.WriteError(w, http.StatusBadRequest, "Either quantity_grams or custom_ingredients is required for saved recipes")
 		return
+	}
+
+	// Validate custom ingredient quantities
+	for _, customIng := range req.CustomIngredients {
+		if customIng.QuantityGrams <= 0 {
+			httputil.WriteError(w, http.StatusBadRequest, "custom ingredient quantity must be greater than 0")
+			return
+		}
 	}
 
 	// Parse date
@@ -187,6 +261,61 @@ func (h *Handler) CreateEntry(w http.ResponseWriter, r *http.Request) {
 		entry.Fiber = roundToTwo(totalFiber)
 		entry.QuantityGrams = roundToTwo(totalWeight)
 		entry.CustomIngredients = customIngredients
+	}
+
+	// Handle inline recipes
+	if req.InlineRecipeName != "" {
+		// Calculate nutrition with custom quantities
+		customIngredients, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, totalWeight, calcErr := h.calculateCustomIngredientsNutrition(req.CustomIngredients)
+		if calcErr != nil {
+			httputil.WriteError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
+			return
+		}
+
+		// Set nutrition values
+		entry.Calories = roundToTwo(totalCalories)
+		entry.Protein = roundToTwo(totalProtein)
+		entry.Carbs = roundToTwo(totalCarbs)
+		entry.Fat = roundToTwo(totalFat)
+		entry.Fiber = roundToTwo(totalFiber)
+		entry.QuantityGrams = roundToTwo(totalWeight)
+		entry.CustomIngredients = customIngredients
+		entry.InlineRecipeName = &req.InlineRecipeName
+
+		// Determine tag from ingredients
+		entry.RecipeTag = h.determineInlineRecipeTag(customIngredients)
+	}
+
+	// Handle inline foods
+	if req.InlineFoodName != "" {
+		// Default tag to "routine" if not provided
+		tag := req.InlineFoodTag
+		if tag == "" {
+			tag = "routine"
+		}
+
+		// Calculate nutrition (inline food values are per 100g)
+		multiplier := req.QuantityGrams / 100.0
+
+		entry.InlineFoodName = &req.InlineFoodName
+		entry.InlineFoodCalories = &req.InlineFoodCalories
+		entry.InlineFoodProtein = &req.InlineFoodProtein
+		entry.InlineFoodCarbs = &req.InlineFoodCarbs
+		entry.InlineFoodFat = &req.InlineFoodFat
+		entry.InlineFoodFiber = &req.InlineFoodFiber
+		entry.InlineFoodTag = &tag
+
+		if req.InlineFoodDescription != "" {
+			entry.InlineFoodDescription = &req.InlineFoodDescription
+		}
+
+		// Calculate and cache consumed nutrition
+		entry.Calories = roundToTwo(req.InlineFoodCalories * multiplier)
+		entry.Protein = roundToTwo(req.InlineFoodProtein * multiplier)
+		entry.Carbs = roundToTwo(req.InlineFoodCarbs * multiplier)
+		entry.Fat = roundToTwo(req.InlineFoodFat * multiplier)
+		entry.Fiber = roundToTwo(req.InlineFoodFiber * multiplier)
+		entry.FoodTag = tag // Cache tag for calorie breakdown
 	}
 
 	if err := h.repo.Create(entry); err != nil {
@@ -401,6 +530,85 @@ func (h *Handler) UpdateEntry(w http.ResponseWriter, r *http.Request) {
 			entry.QuantityGrams = req.QuantityGrams
 			entry.CustomIngredients = customIngredients
 		}
+	} else if entry.InlineRecipeName != nil {
+		// Inline recipe entry - support custom ingredients update
+		if len(req.CustomIngredients) > 0 {
+			customIngredients, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, totalWeight, calcErr := h.calculateCustomIngredientsNutrition(req.CustomIngredients)
+			if calcErr != nil {
+				httputil.WriteError(w, http.StatusInternalServerError, "Failed to calculate nutrition: "+calcErr.Error())
+				return
+			}
+
+			entry.Calories = roundToTwo(totalCalories)
+			entry.Protein = roundToTwo(totalProtein)
+			entry.Carbs = roundToTwo(totalCarbs)
+			entry.Fat = roundToTwo(totalFat)
+			entry.Fiber = roundToTwo(totalFiber)
+			entry.QuantityGrams = roundToTwo(totalWeight)
+			entry.CustomIngredients = customIngredients
+
+			// Recalculate tag when ingredients change
+			entry.RecipeTag = h.determineInlineRecipeTag(customIngredients)
+		}
+	} else if entry.InlineFoodName != nil {
+		// Inline food entry - support updating inline food details
+
+		// Update nutrition values if provided
+		nutritionUpdated := false
+		if req.InlineFoodCalories != nil {
+			entry.InlineFoodCalories = req.InlineFoodCalories
+			nutritionUpdated = true
+		}
+		if req.InlineFoodProtein != nil {
+			entry.InlineFoodProtein = req.InlineFoodProtein
+			nutritionUpdated = true
+		}
+		if req.InlineFoodCarbs != nil {
+			entry.InlineFoodCarbs = req.InlineFoodCarbs
+			nutritionUpdated = true
+		}
+		if req.InlineFoodFat != nil {
+			entry.InlineFoodFat = req.InlineFoodFat
+			nutritionUpdated = true
+		}
+		if req.InlineFoodFiber != nil {
+			entry.InlineFoodFiber = req.InlineFoodFiber
+			nutritionUpdated = true
+		}
+		if req.InlineFoodTag != nil {
+			entry.InlineFoodTag = req.InlineFoodTag
+			entry.FoodTag = *req.InlineFoodTag // Update cached tag
+			nutritionUpdated = true
+		}
+
+		// Update description
+		if req.InlineFoodDescription != nil {
+			entry.InlineFoodDescription = req.InlineFoodDescription
+		}
+
+		// Update name
+		if req.InlineFoodName != nil {
+			entry.InlineFoodName = req.InlineFoodName
+		}
+
+		// Recalculate consumed nutrition if quantity or nutrition values changed
+		if nutritionUpdated || req.QuantityGrams > 0 {
+			if req.QuantityGrams > 0 {
+				entry.QuantityGrams = req.QuantityGrams
+			}
+
+			multiplier := entry.QuantityGrams / 100.0
+			entry.Calories = roundToTwo(*entry.InlineFoodCalories * multiplier)
+			entry.Protein = roundToTwo(*entry.InlineFoodProtein * multiplier)
+			entry.Carbs = roundToTwo(*entry.InlineFoodCarbs * multiplier)
+			entry.Fat = roundToTwo(*entry.InlineFoodFat * multiplier)
+			entry.Fiber = roundToTwo(*entry.InlineFoodFiber * multiplier)
+		}
+	}
+
+	// Update inline recipe name if provided
+	if req.InlineRecipeName != nil {
+		entry.InlineRecipeName = req.InlineRecipeName
 	}
 
 	if req.MealType != "" {
@@ -443,6 +651,178 @@ func (h *Handler) DeleteEntry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// SaveAsRecipe converts an inline recipe to a saved recipe
+func (h *Handler) SaveAsRecipe(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// Extract user_id from context
+	userID, ok := httputil.GetUserID(r)
+	if !ok {
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Get diary entry ID from URL
+	id, err := extractID(r.URL.Path, "/diary/entries/")
+	if err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	// Fetch diary entry
+	entry, err := h.repo.GetByID(uint(id), userID)
+	if err != nil {
+		httputil.WriteError(w, http.StatusNotFound, "Diary entry not found")
+		return
+	}
+
+	// Verify it's an inline recipe (not already a saved recipe)
+	if entry.InlineRecipeName == nil || *entry.InlineRecipeName == "" {
+		httputil.WriteError(w, http.StatusBadRequest, "This entry is not an inline recipe")
+		return
+	}
+
+	if entry.RecipeID != nil {
+		httputil.WriteError(w, http.StatusBadRequest, "This entry already references a saved recipe")
+		return
+	}
+
+	// Verify custom ingredients exist
+	if len(entry.CustomIngredients) == 0 {
+		httputil.WriteError(w, http.StatusBadRequest, "Inline recipe has no ingredients")
+		return
+	}
+
+	// Verify recipe repository is initialized
+	if h.recipeRepo == nil {
+		httputil.WriteError(w, http.StatusInternalServerError, "Recipe repository not initialized")
+		return
+	}
+
+	// Create ingredients list for recipe
+	ingredients := make([]RecipeIngredientRequest, len(entry.CustomIngredients))
+	for i, ing := range entry.CustomIngredients {
+		ingredients[i] = RecipeIngredientRequest{
+			FoodID:        ing.FoodID,
+			QuantityGrams: ing.QuantityGrams,
+		}
+	}
+
+	// Create the recipe via recipe repository
+	savedRecipe, err := h.recipeRepo.CreateRecipe(userID, *entry.InlineRecipeName, entry.RecipeTag, ingredients)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, "Failed to save recipe: "+err.Error())
+		return
+	}
+
+	// Update diary entry to reference the saved recipe
+	entry.RecipeID = &savedRecipe.ID
+	entry.InlineRecipeName = nil // Clear inline name since it's now a saved recipe
+
+	if err := h.repo.Update(entry); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, "Failed to update diary entry: "+err.Error())
+		return
+	}
+
+	// Return the saved recipe
+	httputil.WriteJSON(w, http.StatusOK, savedRecipe)
+}
+
+// SaveAsFood converts an inline food to a saved global food
+func (h *Handler) SaveAsFood(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	userID, ok := httputil.GetUserID(r)
+	if !ok {
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	id, err := extractID(r.URL.Path, "/diary/entries/")
+	if err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	// Fetch diary entry
+	entry, err := h.repo.GetByID(uint(id), userID)
+	if err != nil {
+		httputil.WriteError(w, http.StatusNotFound, "Diary entry not found")
+		return
+	}
+
+	// Verify it's an inline food
+	if entry.InlineFoodName == nil || *entry.InlineFoodName == "" {
+		httputil.WriteError(w, http.StatusBadRequest, "This entry is not an inline food")
+		return
+	}
+
+	if entry.FoodID != nil {
+		httputil.WriteError(w, http.StatusBadRequest, "This entry already references a saved food")
+		return
+	}
+
+	// Verify nutrition data exists
+	if entry.InlineFoodCalories == nil {
+		httputil.WriteError(w, http.StatusBadRequest, "Inline food has no nutrition data")
+		return
+	}
+
+	// Default tag to "routine" if not provided
+	tag := "routine"
+	if entry.InlineFoodTag != nil && *entry.InlineFoodTag != "" {
+		tag = *entry.InlineFoodTag
+	}
+
+	// Create the food via food repository (GLOBAL)
+	description := ""
+	if entry.InlineFoodDescription != nil {
+		description = *entry.InlineFoodDescription
+	}
+
+	savedFood, err := h.foodRepo.Create(food.CreateFoodRequest{
+		Name:        *entry.InlineFoodName,
+		Description: description,
+		Calories:    *entry.InlineFoodCalories,
+		Protein:     *entry.InlineFoodProtein,
+		Carbs:       *entry.InlineFoodCarbs,
+		Fat:         *entry.InlineFoodFat,
+		Fiber:       *entry.InlineFoodFiber,
+		Tag:         tag,
+	})
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, "Failed to save food: "+err.Error())
+		return
+	}
+
+	// Update diary entry to reference saved food
+	entry.FoodID = &savedFood.ID
+	// Clear inline food fields
+	entry.InlineFoodName = nil
+	entry.InlineFoodDescription = nil
+	entry.InlineFoodCalories = nil
+	entry.InlineFoodProtein = nil
+	entry.InlineFoodCarbs = nil
+	entry.InlineFoodFat = nil
+	entry.InlineFoodFiber = nil
+	entry.InlineFoodTag = nil
+
+	// Keep cached nutrition (historical accuracy)
+
+	if err := h.repo.Update(entry); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, "Failed to update diary entry: "+err.Error())
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, savedFood)
 }
 
 // calculateAdherence calculates the adherence percentage
@@ -744,4 +1124,33 @@ func (h *Handler) convertProportionalToCustomIngredients(recipeID int, quantityG
 	// Calculate nutrition
 	result, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, _, err := h.calculateCustomIngredientsNutrition(customIngredients)
 	return result, totalCalories, totalProtein, totalCarbs, totalFat, totalFiber, err
+}
+
+// determineInlineRecipeTag determines the tag for an inline recipe based on ingredients
+// Logic: contextual if ANY ingredient is contextual, routine if ALL are routine
+func (h *Handler) determineInlineRecipeTag(ingredients CustomIngredients) string {
+	hasContextual := false
+	allRoutine := true
+
+	for _, ing := range ingredients {
+		food, err := h.foodRepo.GetByID(int(ing.FoodID))
+		if err != nil {
+			continue
+		}
+
+		if food.Tag == "contextual" {
+			hasContextual = true
+		}
+		if food.Tag != "routine" {
+			allRoutine = false
+		}
+	}
+
+	if hasContextual {
+		return "contextual"
+	}
+	if allRoutine {
+		return "routine"
+	}
+	return ""
 }

@@ -160,8 +160,10 @@ func (r *Repository) populateNames(entries *[]DiaryEntry) {
 	for i := range *entries {
 		entry := &(*entries)[i]
 
-		// Populate food name if food_id is set
-		if entry.FoodID != nil {
+		// Populate food name (inline takes precedence over saved foods)
+		if entry.InlineFoodName != nil && *entry.InlineFoodName != "" {
+			entry.FoodName = *entry.InlineFoodName
+		} else if entry.FoodID != nil {
 			var foodName string
 			err := r.db.Table("foods").Select("name").Where("id = ?", *entry.FoodID).Scan(&foodName).Error
 			if err == nil {
@@ -169,8 +171,10 @@ func (r *Repository) populateNames(entries *[]DiaryEntry) {
 			}
 		}
 
-		// Populate recipe name if recipe_id is set
-		if entry.RecipeID != nil {
+		// Populate recipe name (inline takes precedence over saved recipes)
+		if entry.InlineRecipeName != nil && *entry.InlineRecipeName != "" {
+			entry.RecipeName = *entry.InlineRecipeName
+		} else if entry.RecipeID != nil {
 			var recipeName string
 			err := r.db.Table("recipes").Select("name").Where("id = ?", *entry.RecipeID).Scan(&recipeName).Error
 			if err == nil {

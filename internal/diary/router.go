@@ -23,8 +23,30 @@ func RegisterRoutes(mux *http.ServeMux, handler *Handler) {
 	}))
 
 	mux.HandleFunc("/diary/entries/", auth.JWTMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		if strings.TrimPrefix(r.URL.Path, "/diary/entries/") == "" {
+		path := strings.TrimPrefix(r.URL.Path, "/diary/entries/")
+
+		if path == "" {
 			handler.GetEntries(w, r)
+			return
+		}
+
+		// Check for save-as-food endpoint
+		if strings.HasSuffix(path, "/save-as-food") {
+			if r.Method == http.MethodPost {
+				handler.SaveAsFood(w, r)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+			return
+		}
+
+		// Check for save-as-recipe endpoint
+		if strings.HasSuffix(path, "/save-as-recipe") {
+			if r.Method == http.MethodPost {
+				handler.SaveAsRecipe(w, r)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
 			return
 		}
 

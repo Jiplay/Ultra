@@ -105,6 +105,15 @@ func createTestFood(t *testing.T, foodRepo *food.Repository, name string, calori
 	return created
 }
 
+// mustParseDate parses a date string in YYYY-MM-DD format
+func mustParseDate(dateStr string) time.Time {
+	t, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
 func TestDiaryEntry_FoodCalculation_ExactPortion(t *testing.T) {
 	db, diaryRepo, foodRepo := setupDiaryTest(t)
 	userID := createTestUser(t, db)

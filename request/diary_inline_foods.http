@@ -1,0 +1,161 @@
+### Variables
+@baseUrl = http://localhost:8080
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJleHAiOjE3NjA5NTM1MDQsImlhdCI6MTc2MDg2NzEwNH0.plGuJ-lpSgWh_TZXfuqq4xclw8pd2vipJ86ef8rGLtM
+
+### 1. Create inline food with all fields (per 100g values)
+POST {{baseUrl}}/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "inline_food_name": "Homemade Protein Bar",
+  "inline_food_description": "Custom oats and whey recipe",
+  "inline_food_calories": 350,
+  "inline_food_protein": 25,
+  "inline_food_carbs": 40,
+  "inline_food_fat": 10,
+  "inline_food_fiber": 5,
+  "inline_food_tag": "contextual",
+  "quantity_grams": 80,
+  "date": "2025-12-25",
+  "meal_type": "snack",
+  "notes": "Post-workout snack"
+}
+
+### 2. Create inline food with minimal fields (tag defaults to "routine")
+POST {{baseUrl}}/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "inline_food_name": "Grandma's Special Cake",
+  "inline_food_calories": 450,
+  "inline_food_protein": 6,
+  "inline_food_carbs": 60,
+  "inline_food_fat": 20,
+  "inline_food_fiber": 2,
+  "quantity_grams": 120,
+  "date": "2025-12-25",
+  "meal_type": "dinner"
+}
+
+### 3. Get daily summary (should show inline foods)
+GET {{baseUrl}}/diary/summary/2025-12-25
+Authorization: Bearer {{token}}
+
+### 4. Update inline food name
+# Replace {entry_id} with actual ID from response above
+PUT {{baseUrl}}/diary/entries/{entry_id}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "inline_food_name": "Homemade Energy Bar"
+}
+
+### 5. Update inline food nutrition values
+PUT {{baseUrl}}/diary/entries/{entry_id}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "inline_food_calories": 400,
+  "inline_food_protein": 30,
+  "inline_food_carbs": 45
+}
+
+### 6. Update quantity (should recalculate nutrition)
+PUT {{baseUrl}}/diary/entries/{entry_id}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantity_grams": 100
+}
+
+### 7. Save inline food as global food
+POST {{baseUrl}}/diary/entries/{entry_id}/save-as-food
+Authorization: Bearer {{token}}
+
+### 8. Get all foods (saved food should appear)
+GET {{baseUrl}}/foods
+Authorization: Bearer {{token}}
+
+### 9. Get daily summary again (entry should reference saved food now)
+GET {{baseUrl}}/diary/summary/2025-12-25
+Authorization: Bearer {{token}}
+
+### 10. Error case: Create inline food with negative nutrition
+POST {{baseUrl}}/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "inline_food_name": "Invalid Food",
+  "inline_food_calories": -100,
+  "inline_food_protein": 10,
+  "inline_food_carbs": 20,
+  "inline_food_fat": 5,
+  "inline_food_fiber": 2,
+  "quantity_grams": 50,
+  "date": "2025-12-25",
+  "meal_type": "snack"
+}
+
+### 11. Error case: Create inline food with invalid tag
+POST {{baseUrl}}/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "inline_food_name": "Invalid Tag Food",
+  "inline_food_calories": 200,
+  "inline_food_protein": 10,
+  "inline_food_carbs": 20,
+  "inline_food_fat": 5,
+  "inline_food_fiber": 2,
+  "inline_food_tag": "invalid_tag",
+  "quantity_grams": 50,
+  "date": "2025-12-25",
+  "meal_type": "snack"
+}
+
+### 12. Error case: Both food_id and inline_food_name
+POST {{baseUrl}}/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 1,
+  "inline_food_name": "Conflicting Food",
+  "inline_food_calories": 200,
+  "inline_food_protein": 10,
+  "inline_food_carbs": 20,
+  "inline_food_fat": 5,
+  "inline_food_fiber": 2,
+  "quantity_grams": 50,
+  "date": "2025-12-25",
+  "meal_type": "lunch"
+}
+
+### 13. Error case: Try to save non-inline food as food
+POST {{baseUrl}}/diary/entries/{food_entry_id}/save-as-food
+Authorization: Bearer {{token}}
+
+### 14. Test routine tag calculation
+POST {{baseUrl}}/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "inline_food_name": "Routine Breakfast Item",
+  "inline_food_calories": 300,
+  "inline_food_protein": 20,
+  "inline_food_carbs": 30,
+  "inline_food_fat": 10,
+  "inline_food_fiber": 5,
+  "inline_food_tag": "routine",
+  "quantity_grams": 150,
+  "date": "2025-12-25",
+  "meal_type": "breakfast"
+}

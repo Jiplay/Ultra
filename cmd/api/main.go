@@ -44,6 +44,16 @@ func main() {
 		log.Fatal("Failed to add tags migration:", err)
 	}
 
+	// Run custom migration for inline recipes
+	if err := database.MigrateInlineRecipes(db); err != nil {
+		log.Fatal("Failed to run inline recipes migration:", err)
+	}
+
+	// Run custom migration for inline foods
+	if err := database.MigrateInlineFoods(db); err != nil {
+		log.Fatal("Failed to run inline foods migration:", err)
+	}
+
 	// Auto-migrate database schema (like Sequelize sync)
 	log.Println("Running database migrations...")
 	if err := db.AutoMigrate(
@@ -85,7 +95,7 @@ func main() {
 	metricsHandler := metrics.NewHandler(metricsRepo)
 
 	// Set recipe repository in diary handler (to avoid circular dependency)
-	recipeAdapter := recipe.NewDiaryRecipeAdapter(recipeRepo)
+	recipeAdapter := recipe.NewDiaryRecipeAdapter(recipeRepo, recipeService)
 	diaryHandler.SetRecipeRepo(recipeAdapter)
 
 	// Setup routes

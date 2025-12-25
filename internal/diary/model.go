@@ -63,10 +63,22 @@ type DiaryEntry struct {
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
-	UserID        uint           `json:"user_id" gorm:"not null;index:idx_user_date"`
-	FoodID        *uint          `json:"food_id" gorm:"index"`
-	RecipeID      *uint          `json:"recipe_id" gorm:"index"`
-	Date          time.Time      `json:"date" gorm:"not null;index:idx_user_date"`
+	UserID           uint           `json:"user_id" gorm:"not null;index:idx_user_date"`
+	FoodID           *uint          `json:"food_id" gorm:"index"`
+	RecipeID         *uint          `json:"recipe_id" gorm:"index"`
+	InlineRecipeName *string        `json:"inline_recipe_name,omitempty" gorm:"type:varchar(255)"`
+
+	// Inline food fields (for temporary custom foods)
+	InlineFoodName        *string  `json:"inline_food_name,omitempty" gorm:"type:varchar(255)"`
+	InlineFoodDescription *string  `json:"inline_food_description,omitempty" gorm:"type:text"`
+	InlineFoodCalories    *float64 `json:"inline_food_calories,omitempty" gorm:"type:decimal(10,2)"`
+	InlineFoodProtein     *float64 `json:"inline_food_protein,omitempty" gorm:"type:decimal(10,2)"`
+	InlineFoodCarbs       *float64 `json:"inline_food_carbs,omitempty" gorm:"type:decimal(10,2)"`
+	InlineFoodFat         *float64 `json:"inline_food_fat,omitempty" gorm:"type:decimal(10,2)"`
+	InlineFoodFiber       *float64 `json:"inline_food_fiber,omitempty" gorm:"type:decimal(10,2)"`
+	InlineFoodTag         *string  `json:"inline_food_tag,omitempty" gorm:"type:varchar(20)"`
+
+	Date             time.Time      `json:"date" gorm:"not null;index:idx_user_date"`
 	MealType      MealType       `json:"meal_type" gorm:"type:varchar(20);not null"`
 	QuantityGrams float64        `json:"quantity_grams" gorm:"type:decimal(10,2);not null"` // Grams consumed
 	Notes         string         `json:"notes" gorm:"type:text"`
@@ -100,6 +112,18 @@ type CustomIngredientRequest struct {
 type CreateDiaryEntryRequest struct {
 	FoodID            *uint                      `json:"food_id"`
 	RecipeID          *uint                      `json:"recipe_id"`
+	InlineRecipeName  string                     `json:"inline_recipe_name"`  // For inline/temporary recipes
+
+	// Inline food fields (for temporary custom foods)
+	InlineFoodName        string  `json:"inline_food_name"`
+	InlineFoodDescription string  `json:"inline_food_description,omitempty"`
+	InlineFoodCalories    float64 `json:"inline_food_calories"`
+	InlineFoodProtein     float64 `json:"inline_food_protein"`
+	InlineFoodCarbs       float64 `json:"inline_food_carbs"`
+	InlineFoodFat         float64 `json:"inline_food_fat"`
+	InlineFoodFiber       float64 `json:"inline_food_fiber"`
+	InlineFoodTag         string  `json:"inline_food_tag,omitempty"`
+
 	Date              string                     `json:"date"` // YYYY-MM-DD format
 	MealType          MealType                   `json:"meal_type"`
 	QuantityGrams     float64                    `json:"quantity_grams"`      // For food entries or proportional recipe scaling
@@ -109,6 +133,18 @@ type CreateDiaryEntryRequest struct {
 
 // UpdateDiaryEntryRequest represents the request to update a diary entry
 type UpdateDiaryEntryRequest struct {
+	InlineRecipeName  *string                    `json:"inline_recipe_name,omitempty"`  // For updating inline recipe name
+
+	// Inline food update fields
+	InlineFoodName        *string  `json:"inline_food_name,omitempty"`
+	InlineFoodDescription *string  `json:"inline_food_description,omitempty"`
+	InlineFoodCalories    *float64 `json:"inline_food_calories,omitempty"`
+	InlineFoodProtein     *float64 `json:"inline_food_protein,omitempty"`
+	InlineFoodCarbs       *float64 `json:"inline_food_carbs,omitempty"`
+	InlineFoodFat         *float64 `json:"inline_food_fat,omitempty"`
+	InlineFoodFiber       *float64 `json:"inline_food_fiber,omitempty"`
+	InlineFoodTag         *string  `json:"inline_food_tag,omitempty"`
+
 	QuantityGrams     float64                    `json:"quantity_grams"`
 	CustomIngredients []CustomIngredientRequest  `json:"custom_ingredients"`  // For updating recipe ingredient quantities
 	MealType          MealType                   `json:"meal_type"`
