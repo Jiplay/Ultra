@@ -129,6 +129,13 @@ type DailySummary struct {
 	GoalFat       float64          `json:"goal_fat"`
 	GoalFiber     float64          `json:"goal_fiber"`
 	Adherence     AdherencePercent `json:"adherence"`
+
+	// Calorie breakdown by tag type
+	RoutineCalories    float64 `json:"routine_calories"`
+	ContextualCalories float64 `json:"contextual_calories"`
+	RoutinePercent     float64 `json:"routine_percent"`     // Percentage of calories from routine foods
+	ContextualPercent  float64 `json:"contextual_percent"`  // Percentage of calories from contextual foods
+
 	Entries       []DiaryEntry     `json:"entries"`
 }
 
@@ -151,4 +158,8 @@ type WeeklySummary struct {
 	AverageCarbs    float64       `json:"average_carbs"`
 	AverageFat      float64       `json:"average_fat"`
 	AverageFiber    float64       `json:"average_fiber"`
+
+	// Weekly averages for tag breakdown
+	AvgRoutinePercent    float64 `json:"avg_routine_percent"`
+	AvgContextualPercent float64 `json:"avg_contextual_percent"`
 }

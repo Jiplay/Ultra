@@ -263,6 +263,9 @@ func (h *Handler) GetDailySummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Calculate calorie breakdown by tag
+	routineCalories, contextualCalories, routinePercent, contextualPercent := calculateCaloriesByTag(entries)
+
 	// Calculate totals
 	summary, err := h.repo.GetDailySummary(userID, entryDate)
 	if err != nil {
@@ -303,6 +306,10 @@ func (h *Handler) GetDailySummary(w http.ResponseWriter, r *http.Request) {
 		GoalFat:       goalFat,
 		GoalFiber:     goalFiber,
 		Adherence:     adherence,
+		RoutineCalories:    routineCalories,
+		ContextualCalories: contextualCalories,
+		RoutinePercent:     routinePercent,
+		ContextualPercent:  contextualPercent,
 		Entries:       entries,
 	}
 
@@ -446,6 +453,35 @@ func calculateAdherence(actual, goal float64) float64 {
 	return (actual / goal) * 100
 }
 
+// calculateCaloriesByTag aggregates calories by tag type from diary entries
+func calculateCaloriesByTag(entries []DiaryEntry) (routineCalories, contextualCalories, routinePercent, contextualPercent float64) {
+	var totalCalories float64
+
+	for _, entry := range entries {
+		// Determine which tag to use (food_tag takes precedence over recipe_tag)
+		tag := entry.FoodTag
+		if tag == "" {
+			tag = entry.RecipeTag
+		}
+
+		// Accumulate calories by tag
+		if tag == "routine" {
+			routineCalories += entry.Calories
+		} else if tag == "contextual" {
+			contextualCalories += entry.Calories
+		}
+		totalCalories += entry.Calories
+	}
+
+	// Calculate percentages (avoid division by zero)
+	if totalCalories > 0 {
+		routinePercent = (routineCalories / totalCalories) * 100
+		contextualPercent = (contextualCalories / totalCalories) * 100
+	}
+
+	return
+}
+
 // GetWeeklySummary handles GET /diary/weekly?start_date=YYYY-MM-DD
 func (h *Handler) GetWeeklySummary(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -497,6 +533,7 @@ func (h *Handler) GetWeeklySummary(w http.ResponseWriter, r *http.Request) {
 	// Build daily summaries for each day of the week
 	var dailySummaries []DailySummary
 	var totalCalories, totalProtein, totalCarbs, totalFat, totalFiber float64
+	var totalRoutineCalories, totalContextualCalories float64
 
 	for i := 0; i < 7; i++ {
 		currentDate := startDate.AddDate(0, 0, i)
@@ -525,21 +562,28 @@ func (h *Handler) GetWeeklySummary(w http.ResponseWriter, r *http.Request) {
 			Fiber:    calculateAdherence(summary["fiber"], goalFiber),
 		}
 
+		// Calculate calorie breakdown by tag for this day
+		routineCalories, contextualCalories, routinePercent, contextualPercent := calculateCaloriesByTag(entries)
+
 		// Build daily summary
 		dailySummary := DailySummary{
-			Date:          dateStr,
-			TotalCalories: summary["calories"],
-			TotalProtein:  summary["protein"],
-			TotalCarbs:    summary["carbs"],
-			TotalFat:      summary["fat"],
-			TotalFiber:    summary["fiber"],
-			GoalCalories:  goalCalories,
-			GoalProtein:   goalProtein,
-			GoalCarbs:     goalCarbs,
-			GoalFat:       goalFat,
-			GoalFiber:     goalFiber,
-			Adherence:     adherence,
-			Entries:       entries,
+			Date:               dateStr,
+			TotalCalories:      summary["calories"],
+			TotalProtein:       summary["protein"],
+			TotalCarbs:         summary["carbs"],
+			TotalFat:           summary["fat"],
+			TotalFiber:         summary["fiber"],
+			GoalCalories:       goalCalories,
+			GoalProtein:        goalProtein,
+			GoalCarbs:          goalCarbs,
+			GoalFat:            goalFat,
+			GoalFiber:          goalFiber,
+			Adherence:          adherence,
+			RoutineCalories:    routineCalories,
+			ContextualCalories: contextualCalories,
+			RoutinePercent:     routinePercent,
+			ContextualPercent:  contextualPercent,
+			Entries:            entries,
 		}
 
 		dailySummaries = append(dailySummaries, dailySummary)
@@ -550,18 +594,31 @@ func (h *Handler) GetWeeklySummary(w http.ResponseWriter, r *http.Request) {
 		totalCarbs += summary["carbs"]
 		totalFat += summary["fat"]
 		totalFiber += summary["fiber"]
+		totalRoutineCalories += routineCalories
+		totalContextualCalories += contextualCalories
+	}
+
+	// Calculate weekly average percentages
+	var avgRoutinePercent, avgContextualPercent float64
+	avgWeeklyCalories := totalCalories / 7
+
+	if avgWeeklyCalories > 0 {
+		avgRoutinePercent = roundToTwo((totalRoutineCalories / 7 / avgWeeklyCalories) * 100)
+		avgContextualPercent = roundToTwo((totalContextualCalories / 7 / avgWeeklyCalories) * 100)
 	}
 
 	// Calculate weekly averages
 	weeklySummary := WeeklySummary{
-		StartDate:       startDate.Format("2006-01-02"),
-		EndDate:         endDate.Format("2006-01-02"),
-		DailySummaries:  dailySummaries,
-		AverageCalories: roundToTwo(totalCalories / 7),
-		AverageProtein:  roundToTwo(totalProtein / 7),
-		AverageCarbs:    roundToTwo(totalCarbs / 7),
-		AverageFat:      roundToTwo(totalFat / 7),
-		AverageFiber:    roundToTwo(totalFiber / 7),
+		StartDate:            startDate.Format("2006-01-02"),
+		EndDate:              endDate.Format("2006-01-02"),
+		DailySummaries:       dailySummaries,
+		AverageCalories:      roundToTwo(totalCalories / 7),
+		AverageProtein:       roundToTwo(totalProtein / 7),
+		AverageCarbs:         roundToTwo(totalCarbs / 7),
+		AverageFat:           roundToTwo(totalFat / 7),
+		AverageFiber:         roundToTwo(totalFiber / 7),
+		AvgRoutinePercent:    avgRoutinePercent,
+		AvgContextualPercent: avgContextualPercent,
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, weeklySummary)
