@@ -62,4 +62,13 @@ func RegisterRoutes(mux *http.ServeMux, handler *Handler) {
 
 	mux.HandleFunc("/diary/summary/", auth.JWTMiddleware(handler.GetDailySummary))
 	mux.HandleFunc("/diary/weekly", auth.JWTMiddleware(handler.GetWeeklySummary))
+
+	// Open Food Facts integration endpoint
+	mux.HandleFunc("/diary/entries/from-openfoodfacts", auth.JWTMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			handler.CreateEntryFromOpenFoodFacts(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}))
 }

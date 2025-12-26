@@ -6,21 +6,17 @@ import (
 	"strconv"
 	"strings"
 	"ultra-bis/internal/httputil"
-
-	"ultra-bis/internal/barcode"
 )
 
 // Handler handles HTTP requests for food resources
 type Handler struct {
-	repo           *Repository
-	barcodeService *barcode.Service
+	repo *Repository
 }
 
 // NewHandler creates a new food handler
-func NewHandler(repo *Repository, barcodeService *barcode.Service) *Handler {
+func NewHandler(repo *Repository) *Handler {
 	return &Handler{
-		repo:           repo,
-		barcodeService: barcodeService,
+		repo: repo,
 	}
 }
 
@@ -247,59 +243,4 @@ func (h *Handler) handleFoodsWithID(w http.ResponseWriter, r *http.Request) {
 	default:
 		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
-}
-
-// ScanBarcode handles POST /foods/barcode/{code}
-// Scans a barcode using Open Food Facts API and creates a food entry
-func (h *Handler) ScanBarcode(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
-	// Extract barcode from URL path
-	// Expected path: /foods/barcode/{code}
-	path := strings.TrimPrefix(r.URL.Path, "/foods/barcode/")
-	fetchedBarcode := strings.TrimSpace(path)
-
-	if fetchedBarcode == "" {
-		httputil.WriteError(w, http.StatusBadRequest, "Barcode is required")
-		return
-	}
-
-	// Fetch product data from Open Food Facts
-	productData, err := h.barcodeService.ScanBarcode(fetchedBarcode)
-	if err != nil {
-		if strings.Contains(err.Error(), "product not found") {
-			httputil.WriteError(w, http.StatusNotFound, "Product not found for barcode: "+fetchedBarcode)
-			return
-		}
-		httputil.WriteError(w, http.StatusInternalServerError, "Failed to scan barcode: "+err.Error())
-		return
-	}
-
-	// Validate product data
-	if productData.Name == "" {
-		httputil.WriteError(w, http.StatusBadRequest, "Product name is missing from barcode data")
-		return
-	}
-
-	// Create food item from scanned data
-	createReq := CreateFoodRequest{
-		Name:        productData.Name,
-		Description: productData.Description,
-		Calories:    productData.Calories,
-		Protein:     productData.Protein,
-		Carbs:       productData.Carbs,
-		Fat:         productData.Fat,
-		Fiber:       productData.Fiber,
-	}
-
-	food, err := h.repo.Create(createReq)
-	if err != nil {
-		httputil.WriteError(w, http.StatusInternalServerError, "Failed to create food: "+err.Error())
-		return
-	}
-
-	httputil.WriteJSON(w, http.StatusCreated, food)
 }

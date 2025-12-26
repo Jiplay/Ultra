@@ -1,0 +1,303 @@
+### Variables
+@baseUrl = http://localhost:8080
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxNCwiZW1haWwiOiJiYXJjb2RlX3Rlc3RAZXhhbXBsZS5jb20iLCJleHAiOjE3NjkzMzI2MTMsImlhdCI6MTc2Njc0MDYxM30.Ihe70dw68XWtpQk7LhQz23WJizjWi_98JFpXYE59r7I
+
+### 1. Search Open Food Facts by product name - "apple"
+GET {{baseUrl}}/openfoodfacts/search?q=apple
+Authorization: Bearer {{token}}
+
+### 2. Search Open Food Facts - "banana" with pagination
+GET {{baseUrl}}/openfoodfacts/search?q=banana&page=1&page_size=10
+Authorization: Bearer {{token}}
+
+### 3. Search Open Food Facts - "chocolate"
+GET {{baseUrl}}/openfoodfacts/search?q=chocolate
+Authorization: Bearer {{token}}
+
+### 4. Search Open Food Facts - "yogurt"
+GET {{baseUrl}}/openfoodfacts/search?q=yogurt&page_size=5
+Authorization: Bearer {{token}}
+
+### 5. Error: Empty query parameter
+GET {{baseUrl}}/openfoodfacts/search
+Authorization: Bearer {{token}}
+
+###############################################
+# BARCODE SCANNING
+###############################################
+
+### 6. Scan barcode - Nutella (3017620422003)
+POST {{baseUrl}}/openfoodfacts/barcode/3017620422003
+Authorization: Bearer {{token}}
+
+### 7. Scan barcode - Coca-Cola (5449000000996)
+POST {{baseUrl}}/openfoodfacts/barcode/5449000000996
+Authorization: Bearer {{token}}
+
+### 8. Scan barcode - Red Bull (90162518)
+POST {{baseUrl}}/openfoodfacts/barcode/90162518
+Authorization: Bearer {{token}}
+
+### 9. Error: Empty barcode
+POST {{baseUrl}}/openfoodfacts/barcode/
+Authorization: Bearer {{token}}
+
+### 10. Error: Invalid method (GET instead of POST)
+GET {{baseUrl}}/openfoodfacts/barcode/3017620422003
+Authorization: Bearer {{token}}
+
+###############################################
+# WORKFLOWS
+###############################################
+
+### Workflow 1: Scan → Add to diary as inline food
+# Step 1: Scan barcode to get product data
+POST {{baseUrl}}/openfoodfacts/barcode/3017620422003
+Authorization: Bearer {{token}}
+
+### Step 2: Add scanned product to diary (copy nutrition data from scan response)
+POST {{baseUrl}}/diary/entries/from-openfoodfacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "Nutella",
+  "brands": "Ferrero",
+  "calories": 539,
+  "protein": 6.3,
+  "carbs": 57.5,
+  "fat": 30.9,
+  "fiber": 0,
+  "date": "2025-12-25",
+  "meal_type": "breakfast",
+  "quantity_grams": 30,
+  "notes": "Scanned from barcode",
+  "tag": "contextual"
+}
+
+### Workflow 2: Scan → Create permanent food
+# Step 1: Scan barcode to get product data
+POST {{baseUrl}}/openfoodfacts/barcode/3017620422003
+Authorization: Bearer {{token}}
+
+### Step 2: Create permanent food from scanned data
+POST {{baseUrl}}/foods
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Nutella",
+  "description": "Ferrero - Hazelnut cocoa spread",
+  "calories": 539,
+  "protein": 6.3,
+  "carbs": 57.5,
+  "fat": 30.9,
+  "fiber": 0,
+  "tag": "contextual"
+}
+
+###############################################
+# DIARY ENTRIES FROM OPEN FOOD FACTS
+###############################################
+
+### 12. Create diary entry from Open Food Facts product - Apple (routine tag)
+POST {{baseUrl}}/diary/entries/from-openfoodfacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "Apple",
+  "brands": "Generic",
+  "calories": 52,
+  "protein": 0.3,
+  "carbs": 14,
+  "fat": 0.2,
+  "fiber": 2.4,
+  "date": "2025-12-25",
+  "meal_type": "snack",
+  "quantity_grams": 150,
+  "notes": "Fresh apple from Open Food Facts",
+  "tag": "routine"
+}
+
+### 13. Create diary entry from Open Food Facts - Banana (default tag)
+POST {{baseUrl}}/diary/entries/from-openfoodfacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "Banana",
+  "brands": "Organic",
+  "calories": 89,
+  "protein": 1.1,
+  "carbs": 23,
+  "fat": 0.3,
+  "fiber": 2.6,
+  "date": "2025-12-25",
+  "meal_type": "breakfast",
+  "quantity_grams": 120
+}
+
+### 14. Create diary entry from Open Food Facts - Nutella (contextual tag)
+POST {{baseUrl}}/diary/entries/from-openfoodfacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "Nutella",
+  "brands": "Ferrero",
+  "calories": 539,
+  "protein": 6.3,
+  "carbs": 57.5,
+  "fat": 30.9,
+  "fiber": 0,
+  "date": "2025-12-25",
+  "meal_type": "breakfast",
+  "quantity_grams": 30,
+  "notes": "On toast",
+  "tag": "contextual"
+}
+
+### 15. Create diary entry from Open Food Facts - Coca-Cola
+POST {{baseUrl}}/diary/entries/from-openfoodfacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "Coca-Cola",
+  "brands": "Coca-Cola Company",
+  "calories": 42,
+  "protein": 0,
+  "carbs": 10.6,
+  "fat": 0,
+  "fiber": 0,
+  "date": "2025-12-25",
+  "meal_type": "lunch",
+  "quantity_grams": 250,
+  "tag": "contextual"
+}
+
+### 16. Error: Missing product_name
+POST {{baseUrl}}/diary/entries/from-openfoodfacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "",
+  "brands": "Test",
+  "calories": 100,
+  "protein": 5,
+  "carbs": 10,
+  "fat": 2,
+  "fiber": 1,
+  "date": "2025-12-25",
+  "meal_type": "snack",
+  "quantity_grams": 100
+}
+
+### 17. Error: Invalid quantity_grams (zero)
+POST {{baseUrl}}/diary/entries/from-openfoodfacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "Test Product",
+  "brands": "Test",
+  "calories": 100,
+  "protein": 5,
+  "carbs": 10,
+  "fat": 2,
+  "fiber": 1,
+  "date": "2025-12-25",
+  "meal_type": "snack",
+  "quantity_grams": 0
+}
+
+### 18. Error: Invalid quantity_grams (negative)
+POST {{baseUrl}}/diary/entries/from-openfoodfacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "Test Product",
+  "brands": "Test",
+  "calories": 100,
+  "protein": 5,
+  "carbs": 10,
+  "fat": 2,
+  "fiber": 1,
+  "date": "2025-12-25",
+  "meal_type": "snack",
+  "quantity_grams": -50
+}
+
+### 19. Error: Negative nutrition values
+POST {{baseUrl}}/diary/entries/from-openfoodfacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "Test Product",
+  "brands": "Test",
+  "calories": -100,
+  "protein": 5,
+  "carbs": 10,
+  "fat": 2,
+  "fiber": 1,
+  "date": "2025-12-25",
+  "meal_type": "snack",
+  "quantity_grams": 100
+}
+
+### 20. Error: Invalid tag
+POST {{baseUrl}}/diary/entries/from-openfoodfacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "Test Product",
+  "brands": "Test",
+  "calories": 100,
+  "protein": 5,
+  "carbs": 10,
+  "fat": 2,
+  "fiber": 1,
+  "date": "2025-12-25",
+  "meal_type": "snack",
+  "quantity_grams": 100,
+  "tag": "invalid_tag"
+}
+
+### 21. Error: Invalid date format
+POST {{baseUrl}}/diary/entries/from-openfoodfacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_name": "Test Product",
+  "brands": "Test",
+  "calories": 100,
+  "protein": 5,
+  "carbs": 10,
+  "fat": 2,
+  "fiber": 1,
+  "date": "12/25/2025",
+  "meal_type": "snack",
+  "quantity_grams": 100
+}
+
+### 22. Get daily summary to verify Open Food Facts entries
+GET {{baseUrl}}/diary/summary/2025-12-25
+Authorization: Bearer {{token}}
+
+### 23. Get diary entries by date
+GET {{baseUrl}}/diary/entries?date=2025-12-25
+Authorization: Bearer {{token}}
+
+### 24. Save Open Food Facts entry as permanent food
+# First, get the entry ID from the response of any create request above
+# Then use it here: /diary/entries/{entry_id}/save-as-food
+POST {{baseUrl}}/diary/entries/1/save-as-food
+Authorization: Bearer {{token}}
+
+###

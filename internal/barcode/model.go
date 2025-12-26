@@ -36,3 +36,32 @@ type ProductData struct {
 	Fat         float64
 	Fiber       float64
 }
+
+// OpenFoodFactsSearchResponse represents the search response from Open Food Facts API
+type OpenFoodFactsSearchResponse struct {
+	Count      int                      `json:"count"`
+	Page       int                      `json:"page"`
+	PageSize   int                      `json:"page_size"`
+	PageCount  int                      `json:"page_count"`
+	Products   []OpenFoodFactsProduct   `json:"products"`
+}
+
+// SearchProductResponse represents a simplified product in search results
+type SearchProductResponse struct {
+	Name        string  `json:"name"`
+	Brands      string  `json:"brands"`
+	Calories    float64 `json:"calories"`
+	Protein     float64 `json:"protein"`
+	Carbs       float64 `json:"carbs"`
+	Fat         float64 `json:"fat"`
+	Fiber       float64 `json:"fiber"`
+	Code        string  `json:"code"`
+}
+
+// SearchResults represents the processed search results
+type SearchResults struct {
+	Count      int                     `json:"count"`
+	Page       int                     `json:"page"`
+	PageSize   int                     `json:"page_size"`
+	Products   []SearchProductResponse `json:"products"`
+}

@@ -88,7 +88,8 @@ func main() {
 
 	// Initialize handlers
 	authHandler := auth.NewHandler(userRepo)
-	foodHandler := food.NewHandler(foodRepo, barcodeService)
+	barcodeHandler := barcode.NewHandler(barcodeService)
+	foodHandler := food.NewHandler(foodRepo)
 	recipeHandler := recipe.NewHandler(recipeService)
 	goalHandler := goal.NewHandler(goalRepo, userRepo)
 	diaryHandler := diary.NewHandler(diaryRepo, foodRepo, goalRepo)
@@ -103,6 +104,7 @@ func main() {
 
 	// Register all routes
 	auth.RegisterRoutes(mux, authHandler)
+	barcode.RegisterRoutes(mux, barcodeHandler)
 	food.RegisterRoutes(mux, foodHandler)
 	recipe.RegisterRoutes(mux, recipeHandler)
 	goal.RegisterRoutes(mux, goalHandler)
@@ -133,7 +135,12 @@ func main() {
 	log.Println("  GET    /foods/{id}             - Get food by ID")
 	log.Println("  PUT    /foods/{id}             - Update food")
 	log.Println("  DELETE /foods/{id}             - Delete food")
-	log.Println("  POST   /foods/barcode/{code}   - Scan barcode and create food (protected)")
+	log.Println("-------------------------------------------")
+	log.Println("OPEN FOOD FACTS:")
+	log.Println("  GET    /openfoodfacts/search?q={query}&page={page}&page_size={size}")
+	log.Println("                                 - Search products by name (protected)")
+	log.Println("  POST   /openfoodfacts/barcode/{code}")
+	log.Println("                                 - Scan barcode and get product data (protected)")
 	log.Println("-------------------------------------------")
 	log.Println("RECIPES:")
 	log.Println("  POST   /recipes                - Create recipe (protected)")
@@ -155,6 +162,8 @@ func main() {
 	log.Println("-------------------------------------------")
 	log.Println("DIARY (MEAL LOGGING):")
 	log.Println("  POST   /diary/entries          - Log food/meal (protected)")
+	log.Println("  POST   /diary/entries/from-openfoodfacts")
+	log.Println("                                 - Log from Open Food Facts product (protected)")
 	log.Println("  GET    /diary/entries?date=... - Get entries by date (protected)")
 	log.Println("  GET    /diary/summary/{date}   - Get daily summary (protected)")
 	log.Println("  PUT    /diary/entries/{id}     - Update entry (protected)")

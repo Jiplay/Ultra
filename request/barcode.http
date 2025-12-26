@@ -2,7 +2,7 @@
 ### Use this file with IntelliJ IDEA/GoLand (built-in) or VS Code (with REST Client extension)
 
 @baseUrl = http://localhost:8080
-@token = YOUR_JWT_TOKEN_HERE
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxNCwiZW1haWwiOiJiYXJjb2RlX3Rlc3RAZXhhbXBsZS5jb20iLCJleHAiOjE3NjkzMzI2MTMsImlhdCI6MTc2Njc0MDYxM30.Ihe70dw68XWtpQk7LhQz23WJizjWi_98JFpXYE59r7I
 
 ### 1. Register a test user (if needed)
 POST {{baseUrl}}/auth/register

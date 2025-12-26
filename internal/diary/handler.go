@@ -825,6 +825,105 @@ func (h *Handler) SaveAsFood(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, savedFood)
 }
 
+// CreateEntryFromOpenFoodFacts handles POST /diary/entries/from-openfoodfacts
+func (h *Handler) CreateEntryFromOpenFoodFacts(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	userID, ok := httputil.GetUserID(r)
+	if !ok {
+		httputil.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	var req CreateEntryFromOpenFoodFactsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validate required fields
+	if req.ProductName == "" {
+		httputil.WriteError(w, http.StatusBadRequest, "product_name is required")
+		return
+	}
+
+	if req.QuantityGrams <= 0 {
+		httputil.WriteError(w, http.StatusBadRequest, "quantity_grams must be greater than 0")
+		return
+	}
+
+	// Validate nutrition values are non-negative
+	if req.Calories < 0 || req.Protein < 0 || req.Carbs < 0 || req.Fat < 0 || req.Fiber < 0 {
+		httputil.WriteError(w, http.StatusBadRequest, "Nutrition values must be non-negative")
+		return
+	}
+
+	// Validate tag if provided
+	tag := req.Tag
+	if tag == "" {
+		tag = "routine" // Default to routine
+	} else if tag != "routine" && tag != "contextual" {
+		httputil.WriteError(w, http.StatusBadRequest, "tag must be 'routine' or 'contextual'")
+		return
+	}
+
+	// Parse date
+	var entryDate time.Time
+	if req.Date == "" {
+		entryDate = time.Now()
+	} else {
+		var err error
+		entryDate, err = time.Parse("2006-01-02", req.Date)
+		if err != nil {
+			httputil.WriteError(w, http.StatusBadRequest, "Invalid date format (use YYYY-MM-DD)")
+			return
+		}
+	}
+
+	// Build description from product name and brands
+	description := req.ProductName
+	if req.Brands != "" {
+		description = req.Brands + " - " + req.ProductName
+	}
+
+	// Calculate consumed nutrition (product data is per 100g)
+	multiplier := req.QuantityGrams / 100.0
+
+	// Create diary entry with inline food
+	entry := &DiaryEntry{
+		UserID:                userID,
+		InlineFoodName:        &req.ProductName,
+		InlineFoodDescription: &description,
+		InlineFoodCalories:    &req.Calories,
+		InlineFoodProtein:     &req.Protein,
+		InlineFoodCarbs:       &req.Carbs,
+		InlineFoodFat:         &req.Fat,
+		InlineFoodFiber:       &req.Fiber,
+		InlineFoodTag:         &tag,
+		Date:                  entryDate,
+		MealType:              req.MealType,
+		QuantityGrams:         req.QuantityGrams,
+		Notes:                 req.Notes,
+		// Cached consumed nutrition
+		Calories:   roundToTwo(req.Calories * multiplier),
+		Protein:    roundToTwo(req.Protein * multiplier),
+		Carbs:      roundToTwo(req.Carbs * multiplier),
+		Fat:        roundToTwo(req.Fat * multiplier),
+		Fiber:      roundToTwo(req.Fiber * multiplier),
+		FoodTag:    tag,
+	}
+
+	if err := h.repo.Create(entry); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusCreated, entry)
+}
+
 // calculateAdherence calculates the adherence percentage
 func calculateAdherence(actual, goal float64) float64 {
 	if goal == 0 {

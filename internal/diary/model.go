@@ -151,6 +151,22 @@ type UpdateDiaryEntryRequest struct {
 	Notes             string                     `json:"notes"`
 }
 
+// CreateEntryFromOpenFoodFactsRequest represents creating diary entry from Open Food Facts product
+type CreateEntryFromOpenFoodFactsRequest struct {
+	ProductName   string   `json:"product_name"`
+	Brands        string   `json:"brands"`
+	Calories      float64  `json:"calories"`         // per 100g
+	Protein       float64  `json:"protein"`          // per 100g
+	Carbs         float64  `json:"carbs"`            // per 100g
+	Fat           float64  `json:"fat"`              // per 100g
+	Fiber         float64  `json:"fiber"`            // per 100g
+	Date          string   `json:"date"`             // YYYY-MM-DD
+	MealType      MealType `json:"meal_type"`
+	QuantityGrams float64  `json:"quantity_grams"`
+	Notes         string   `json:"notes"`
+	Tag           string   `json:"tag"`              // Optional: "routine" or "contextual"
+}
+
 // DailySummary represents the daily nutrition summary
 type DailySummary struct {
 	Date         string            `json:"date"`
