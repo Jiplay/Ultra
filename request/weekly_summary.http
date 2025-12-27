@@ -1,0 +1,413 @@
+### WEEKLY SUMMARY TESTS
+### Tests the GET /diary/weekly endpoint for routine food tracking
+### Weekly summary returns an array of 7 values (Monday-Sunday):
+### - null: No diary entries for that day
+### - true: >75% of calories from routine foods
+### - false: ≤75% of calories from routine foods
+
+###############################################
+### SETUP
+###############################################
+
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJlbWFpbCI6Imp1anVnYXJzaWFAZ21haWwuY29tIiwiZXhwIjoxNzY5MDA2ODc1LCJpYXQiOjE3NjY0MTQ4NzV9.wUYk_86Fbohmzf3qzsV-1gn0K74i6OtvvGaW-Mjb5eE
+
+###############################################
+### 1. BASIC WEEKLY SUMMARY TESTS
+###############################################
+
+### Get weekly summary - Current week (defaults to Monday of current week)
+GET http://localhost:8080/diary/weekly
+Authorization: Bearer {{token}}
+
+###
+
+### Get weekly summary - Specific week (starting from a Monday)
+### Format: start_date=YYYY-MM-DD (should be a Monday)
+GET http://localhost:8080/diary/weekly?start_date=2025-01-13
+Authorization: Bearer {{token}}
+
+###
+
+### Get weekly summary - Different week
+GET http://localhost:8080/diary/weekly?start_date=2025-01-20
+Authorization: Bearer {{token}}
+
+###
+
+### Get weekly summary - Previous week
+GET http://localhost:8080/diary/weekly?start_date=2025-01-06
+Authorization: Bearer {{token}}
+
+###
+
+###############################################
+### 2. ERROR HANDLING TESTS
+###############################################
+
+### Invalid date format (should return 400)
+GET http://localhost:8080/diary/weekly?start_date=invalid-date
+Authorization: Bearer {{token}}
+
+###
+
+### Invalid date format - wrong separator (should return 400)
+GET http://localhost:8080/diary/weekly?start_date=2025/01/13
+Authorization: Bearer {{token}}
+
+###
+
+### Missing authentication (should return 401)
+GET http://localhost:8080/diary/weekly?start_date=2025-01-13
+
+###
+
+###############################################
+### 3. SETUP DATA FOR WEEKLY TESTING
+### Create foods and diary entries to test weekly summary
+###############################################
+
+### Step 1: Create routine food (chicken breast)
+POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Chicken Breast - Routine",
+  "description": "Grilled chicken breast",
+  "calories": 165,
+  "protein": 31,
+  "carbs": 0,
+  "fat": 3.6,
+  "fiber": 0,
+  "tags": ["routine"]
+}
+
+###
+
+### Step 2: Create contextual food (pizza)
+POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Pizza - Contextual",
+  "description": "Pepperoni pizza",
+  "calories": 266,
+  "protein": 11,
+  "carbs": 33,
+  "fat": 10,
+  "fiber": 2,
+  "tags": ["contextual"]
+}
+
+###
+
+### Step 3: Create another routine food (brown rice)
+POST http://localhost:8080/foods
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Brown Rice - Routine",
+  "description": "Cooked brown rice",
+  "calories": 216,
+  "protein": 5,
+  "carbs": 45,
+  "fat": 1.8,
+  "fiber": 3.5,
+  "tags": ["routine"]
+}
+
+###
+
+###############################################
+### 4. CREATE DIARY ENTRIES FOR WEEK TESTING
+### Testing week: 2025-01-13 to 2025-01-19 (Mon-Sun)
+###############################################
+
+### Monday (2025-01-13) - 100% routine foods (should be true)
+### 300g chicken (495 cal) only
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 62,
+  "date": "2025-01-13",
+  "meal_type": "breakfast",
+  "quantity_grams": 300,
+  "notes": "100% routine day"
+}
+
+###
+
+### Tuesday (2025-01-14) - 0% routine foods (should be false)
+### 200g pizza (532 cal) only
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 63,
+  "date": "2025-01-14",
+  "meal_type": "lunch",
+  "quantity_grams": 200,
+  "notes": "0% routine day"
+}
+
+###
+
+### Wednesday (2025-01-15) - 76% routine foods (should be true)
+### 300g chicken (495 cal) + 50g pizza (133 cal) = 628 total, 495/628 = 78.8%
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 64,
+  "date": "2025-01-15",
+  "meal_type": "breakfast",
+  "quantity_grams": 300,
+  "notes": "High routine percentage"
+}
+
+###
+
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 62,
+  "date": "2025-01-15",
+  "meal_type": "snack",
+  "quantity_grams": 50,
+  "notes": "Small contextual snack"
+}
+
+###
+
+### Thursday (2025-01-16) - 75% routine foods exactly (should be false, as >75% required)
+### 200g chicken (330 cal) + 50g pizza (133 cal) = 463 total, 330/463 = 71.3%
+### Actually this is ~71%, let me recalculate for exactly 75%
+### For exactly 75%: routine/(routine+contextual) = 0.75
+### If routine = 300 cal, then total = 400 cal, contextual = 100 cal
+### 181g chicken (300 cal) + 37.5g pizza (100 cal)
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 1,
+  "date": "2025-01-16",
+  "meal_type": "breakfast",
+  "quantity_grams": 181,
+  "notes": "Exactly 75% routine (should be false)"
+}
+
+###
+
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 2,
+  "date": "2025-01-16",
+  "meal_type": "lunch",
+  "quantity_grams": 38,
+  "notes": "Exactly 75% routine (should be false)"
+}
+
+###
+
+### Friday (2025-01-17) - No entries (should be null)
+### Don't create any entries for this day
+
+### Saturday (2025-01-18) - Mixed with routine and contextual
+### 100g chicken (165 cal) + 100g rice (216 cal) + 100g pizza (266 cal)
+### Routine = 381 cal, Total = 647 cal, 381/647 = 58.9% (should be false)
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 1,
+  "date": "2025-01-18",
+  "meal_type": "breakfast",
+  "quantity_grams": 100,
+  "notes": "Mixed day"
+}
+
+###
+
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 3,
+  "date": "2025-01-18",
+  "meal_type": "lunch",
+  "quantity_grams": 100,
+  "notes": "Mixed day"
+}
+
+###
+
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 2,
+  "date": "2025-01-18",
+  "meal_type": "dinner",
+  "quantity_grams": 100,
+  "notes": "Mixed day"
+}
+
+###
+
+### Sunday (2025-01-19) - High routine percentage (should be true)
+### 400g chicken (660 cal) + 200g rice (432 cal) = 1092 cal routine only
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 1,
+  "date": "2025-01-19",
+  "meal_type": "breakfast",
+  "quantity_grams": 400,
+  "notes": "High routine day"
+}
+
+###
+
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 3,
+  "date": "2025-01-19",
+  "meal_type": "lunch",
+  "quantity_grams": 200,
+  "notes": "High routine day"
+}
+
+###
+
+###############################################
+### 5. VERIFY WEEKLY SUMMARY
+###############################################
+
+### Get weekly summary for the test week (2025-01-13 to 2025-01-19)
+### Expected result: [true, false, true, false, null, false, true]
+### Monday: true (100% routine)
+### Tuesday: false (0% routine)
+### Wednesday: true (78.8% routine)
+### Thursday: false (exactly 75% routine, needs >75%)
+### Friday: null (no entries)
+### Saturday: false (58.9% routine)
+### Sunday: true (100% routine)
+GET http://localhost:8080/diary/weekly?start_date=2025-01-13
+Authorization: Bearer {{token}}
+
+###
+
+###############################################
+### 6. VERIFY INDIVIDUAL DAILY SUMMARIES
+### Check each day individually to understand the breakdown
+###############################################
+
+### Monday summary (should show high routine percentage)
+GET http://localhost:8080/diary/summary/2025-01-13
+Authorization: Bearer {{token}}
+
+###
+
+### Tuesday summary (should show low routine percentage)
+GET http://localhost:8080/diary/summary/2025-01-14
+Authorization: Bearer {{token}}
+
+###
+
+### Wednesday summary (should show high routine percentage)
+GET http://localhost:8080/diary/summary/2025-01-15
+Authorization: Bearer {{token}}
+
+###
+
+### Thursday summary (should show exactly 75% or close)
+GET http://localhost:8080/diary/summary/2025-01-16
+Authorization: Bearer {{token}}
+
+###
+
+### Friday summary (should show no entries)
+GET http://localhost:8080/diary/summary/2025-01-17
+Authorization: Bearer {{token}}
+
+###
+
+### Saturday summary (should show mixed routine percentage)
+GET http://localhost:8080/diary/summary/2025-01-18
+Authorization: Bearer {{token}}
+
+###
+
+### Sunday summary (should show high routine percentage)
+GET http://localhost:8080/diary/summary/2025-01-19
+Authorization: Bearer {{token}}
+
+###
+
+###############################################
+### 7. ADDITIONAL TEST SCENARIOS
+###############################################
+
+### Get weekly summary for empty week (no entries)
+### Should return: [null, null, null, null, null, null, null]
+GET http://localhost:8080/diary/weekly?start_date=2025-02-10
+Authorization: Bearer {{token}}
+
+###
+
+### Get weekly summary for partially filled week
+### Create just a couple of entries for a different week
+POST http://localhost:8080/diary/entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "food_id": 1,
+  "date": "2025-01-27",
+  "meal_type": "breakfast",
+  "quantity_grams": 200,
+  "notes": "Partial week test - Monday"
+}
+
+###
+
+GET http://localhost:8080/diary/weekly?start_date=2025-01-27
+Authorization: Bearer {{token}}
+
+###
+
+###############################################
+### 8. CLEANUP (Optional)
+###############################################
+
+### Get all diary entries to find IDs for deletion
+GET http://localhost:8080/diary/entries?date=2025-01-13
+Authorization: Bearer {{token}}
+
+###
+
+### Delete specific diary entry (replace with actual ID)
+# DELETE http://localhost:8080/diary/entries/1
+# Authorization: Bearer {{token}}
+
+###

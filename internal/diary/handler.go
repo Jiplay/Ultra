@@ -962,6 +962,8 @@ func calculateCaloriesByTag(entries []DiaryEntry) (routineCalories, contextualCa
 }
 
 // GetWeeklySummary handles GET /diary/weekly?start_date=YYYY-MM-DD
+// Returns a 7-element array representing routine calorie achievement for each day (Mon-Sun)
+// Values: true (>75% routine), false (≤75% routine), null (no entries)
 func (h *Handler) GetWeeklySummary(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
@@ -995,28 +997,11 @@ func (h *Handler) GetWeeklySummary(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Calculate end date (6 days after start)
-	endDate := startDate.AddDate(0, 0, 6)
-
-	// Get active goal once for all days
-	activeGoal, err := h.goalRepo.GetActive(userID)
-	var goalCalories, goalProtein, goalCarbs, goalFat, goalFiber float64
-	if err == nil {
-		goalCalories = activeGoal.Calories
-		goalProtein = activeGoal.Protein
-		goalCarbs = activeGoal.Carbs
-		goalFat = activeGoal.Fat
-		goalFiber = activeGoal.Fiber
-	}
-
-	// Build daily summaries for each day of the week
-	var dailySummaries []DailySummary
-	var totalCalories, totalProtein, totalCarbs, totalFat, totalFiber float64
-	var totalRoutineCalories, totalContextualCalories float64
+	// Build weekly achievement array
+	var weeklyAchievements [7]interface{} // Mon-Sun
 
 	for i := 0; i < 7; i++ {
 		currentDate := startDate.AddDate(0, 0, i)
-		dateStr := currentDate.Format("2006-01-02")
 
 		// Get entries for this day
 		entries, err := h.repo.GetByDate(userID, currentDate)
@@ -1025,82 +1010,25 @@ func (h *Handler) GetWeeklySummary(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Calculate totals for this day
-		summary, err := h.repo.GetDailySummary(userID, currentDate)
-		if err != nil {
-			httputil.WriteError(w, http.StatusInternalServerError, err.Error())
-			return
+		// Calculate routine percentage using existing helper
+		_, _, routinePercent, _ := calculateCaloriesByTag(entries)
+
+		// Calculate total calories
+		var totalCalories float64
+		for _, entry := range entries {
+			totalCalories += entry.Calories
 		}
 
-		// Calculate adherence
-		adherence := AdherencePercent{
-			Calories: calculateAdherence(summary["calories"], goalCalories),
-			Protein:  calculateAdherence(summary["protein"], goalProtein),
-			Carbs:    calculateAdherence(summary["carbs"], goalCarbs),
-			Fat:      calculateAdherence(summary["fat"], goalFat),
-			Fiber:    calculateAdherence(summary["fiber"], goalFiber),
+		// Determine achievement value
+		if totalCalories == 0 {
+			weeklyAchievements[i] = nil // No data
+		} else {
+			weeklyAchievements[i] = routinePercent > 75.0 // >75% = true
 		}
-
-		// Calculate calorie breakdown by tag for this day
-		routineCalories, contextualCalories, routinePercent, contextualPercent := calculateCaloriesByTag(entries)
-
-		// Build daily summary
-		dailySummary := DailySummary{
-			Date:               dateStr,
-			TotalCalories:      summary["calories"],
-			TotalProtein:       summary["protein"],
-			TotalCarbs:         summary["carbs"],
-			TotalFat:           summary["fat"],
-			TotalFiber:         summary["fiber"],
-			GoalCalories:       goalCalories,
-			GoalProtein:        goalProtein,
-			GoalCarbs:          goalCarbs,
-			GoalFat:            goalFat,
-			GoalFiber:          goalFiber,
-			Adherence:          adherence,
-			RoutineCalories:    routineCalories,
-			ContextualCalories: contextualCalories,
-			RoutinePercent:     routinePercent,
-			ContextualPercent:  contextualPercent,
-			Entries:            entries,
-		}
-
-		dailySummaries = append(dailySummaries, dailySummary)
-
-		// Accumulate for weekly averages
-		totalCalories += summary["calories"]
-		totalProtein += summary["protein"]
-		totalCarbs += summary["carbs"]
-		totalFat += summary["fat"]
-		totalFiber += summary["fiber"]
-		totalRoutineCalories += routineCalories
-		totalContextualCalories += contextualCalories
 	}
 
-	// Calculate weekly average percentages
-	var avgRoutinePercent, avgContextualPercent float64
-	avgWeeklyCalories := totalCalories / 7
-
-	if avgWeeklyCalories > 0 {
-		avgRoutinePercent = roundToTwo((totalRoutineCalories / 7 / avgWeeklyCalories) * 100)
-		avgContextualPercent = roundToTwo((totalContextualCalories / 7 / avgWeeklyCalories) * 100)
-	}
-
-	// Calculate weekly averages
-	weeklySummary := WeeklySummary{
-		StartDate:            startDate.Format("2006-01-02"),
-		EndDate:              endDate.Format("2006-01-02"),
-		DailySummaries:       dailySummaries,
-		AverageCalories:      roundToTwo(totalCalories / 7),
-		AverageProtein:       roundToTwo(totalProtein / 7),
-		AverageCarbs:         roundToTwo(totalCarbs / 7),
-		AverageFat:           roundToTwo(totalFat / 7),
-		AverageFiber:         roundToTwo(totalFiber / 7),
-		AvgRoutinePercent:    avgRoutinePercent,
-		AvgContextualPercent: avgContextualPercent,
-	}
-
-	httputil.WriteJSON(w, http.StatusOK, weeklySummary)
+	// Return simple array
+	httputil.WriteJSON(w, http.StatusOK, weeklyAchievements)
 }
 
 // roundToTwo rounds a float to 2 decimal places
