@@ -10,13 +10,15 @@ import (
 
 // Handler handles HTTP requests for food resources
 type Handler struct {
-	repo *Repository
+	repo            *Repository
+	generalFoodRepo GeneralFoodRepository
 }
 
 // NewHandler creates a new food handler
-func NewHandler(repo *Repository) *Handler {
+func NewHandler(repo *Repository, generalFoodRepo GeneralFoodRepository) *Handler {
 	return &Handler{
-		repo: repo,
+		repo:            repo,
+		generalFoodRepo: generalFoodRepo,
 	}
 }
 
@@ -43,7 +45,7 @@ func (h *Handler) CreateFood(w http.ResponseWriter, r *http.Request) {
 	if req.Tag == "" {
 		req.Tag = TagRoutine
 	} else if !ValidateTag(req.Tag) {
-		httputil.WriteError(w, http.StatusBadRequest, "Tag must be 'routine' or 'contextual'")
+		httputil.WriteError(w, http.StatusBadRequest, "Tag must be 'routine', 'contextual', or 'general'")
 		return
 	}
 
@@ -125,7 +127,7 @@ func (h *Handler) UpdateFood(w http.ResponseWriter, r *http.Request) {
 
 	// Validate tag if provided
 	if req.Tag != "" && !ValidateTag(req.Tag) {
-		httputil.WriteError(w, http.StatusBadRequest, "Tag must be 'routine' or 'contextual'")
+		httputil.WriteError(w, http.StatusBadRequest, "Tag must be 'routine', 'contextual', or 'general'")
 		return
 	}
 
@@ -186,7 +188,7 @@ func (h *Handler) handleFoods(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetFoodsByTag handles GET /foods/{filter} where filter = routine|contextual
+// GetFoodsByTag handles GET /foods/{filter} where filter = routine|contextual|general
 func (h *Handler) GetFoodsByTag(w http.ResponseWriter, r *http.Request, tag string) {
 	if r.Method != http.MethodGet {
 		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
@@ -223,7 +225,7 @@ func (h *Handler) handleFoodsWithID(w http.ResponseWriter, r *http.Request) {
 
 	// If not numeric, check if it's a valid tag filter
 	if err != nil {
-		if pathSegment == TagRoutine || pathSegment == TagContextual {
+		if pathSegment == TagRoutine || pathSegment == TagContextual || pathSegment == TagGeneral {
 			h.GetFoodsByTag(w, r, pathSegment)
 			return
 		}
@@ -243,4 +245,56 @@ func (h *Handler) handleFoodsWithID(w http.ResponseWriter, r *http.Request) {
 	default:
 		httputil.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
+}
+
+// SearchGeneralFoods handles GET /general-foods
+func (h *Handler) SearchGeneralFoods(w http.ResponseWriter, r *http.Request) {
+	// Extract search query (support both 'q' and 'search' params)
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		query = r.URL.Query().Get("search")
+	}
+
+	// Extract and validate page parameter
+	page := 1
+	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		} else {
+			httputil.WriteError(w, http.StatusBadRequest, "Invalid page parameter")
+			return
+		}
+	}
+
+	// Extract and validate page_size parameter
+	pageSize := 20
+	if pageSizeStr := r.URL.Query().Get("page_size"); pageSizeStr != "" {
+		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps > 0 {
+			if ps > 100 {
+				pageSize = 100 // Cap at 100
+			} else {
+				pageSize = ps
+			}
+		} else {
+			httputil.WriteError(w, http.StatusBadRequest, "Invalid page_size parameter")
+			return
+		}
+	}
+
+	// Call repository
+	foods, count, err := h.generalFoodRepo.Search(query, page, pageSize)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Build response
+	response := GeneralFoodSearchResponse{
+		Count:    count,
+		Page:     page,
+		PageSize: pageSize,
+		Foods:    foods,
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, response)
 }

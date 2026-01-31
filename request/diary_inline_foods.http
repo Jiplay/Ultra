@@ -1,6 +1,6 @@
 ### Variables
 @baseUrl = http://localhost:8080
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJleHAiOjE3NjA5NTM1MDQsImlhdCI6MTc2MDg2NzEwNH0.plGuJ-lpSgWh_TZXfuqq4xclw8pd2vipJ86ef8rGLtM
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxNCwiZW1haWwiOiJiYXJjb2RlX3Rlc3RAZXhhbXBsZS5jb20iLCJleHAiOjE3Njk0MzM4NTQsImlhdCI6MTc2Njg0MTg1NH0.hqkIPobNaWVxdeec9C4ce51hd8kkH5y5-iIyVBux1Yw
 
 ### 1. Create inline food with all fields (per 100g values)
 POST {{baseUrl}}/diary/entries

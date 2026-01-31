@@ -59,6 +59,7 @@ func main() {
 	if err := db.AutoMigrate(
 		&user.User{},
 		&food.Food{},
+		&food.GeneralFood{},
 		&recipe.Recipe{},
 		&recipe.RecipeIngredient{},
 		&goal.NutritionGoal{},
@@ -72,6 +73,7 @@ func main() {
 	// Initialize repositories
 	userRepo := user.NewRepository(db)
 	foodRepo := food.NewRepository(db)
+	generalFoodRepo := food.NewGeneralFoodRepository(db)
 	recipeRepo := recipe.NewRepository(db)
 	goalRepo := goal.NewRepository(db)
 	diaryRepo := diary.NewRepository(db)
@@ -89,7 +91,7 @@ func main() {
 	// Initialize handlers
 	authHandler := auth.NewHandler(userRepo)
 	barcodeHandler := barcode.NewHandler(barcodeService)
-	foodHandler := food.NewHandler(foodRepo)
+	foodHandler := food.NewHandler(foodRepo, generalFoodRepo)
 	recipeHandler := recipe.NewHandler(recipeService)
 	goalHandler := goal.NewHandler(goalRepo, userRepo)
 	diaryHandler := diary.NewHandler(diaryRepo, foodRepo, goalRepo)

@@ -146,3 +146,61 @@ func (r *Repository) GetByTag(tag string) ([]Food, error) {
 
 	return foods, nil
 }
+
+// GeneralFoodRepository interface defines operations for general foods reference data
+type GeneralFoodRepository interface {
+	Search(query string, page int, pageSize int) ([]GeneralFood, int64, error)
+	GetByID(id uint) (*GeneralFood, error)
+}
+
+// generalFoodRepository implements GeneralFoodRepository
+type generalFoodRepository struct {
+	db *gorm.DB
+}
+
+// NewGeneralFoodRepository creates a new general food repository
+func NewGeneralFoodRepository(db *gorm.DB) GeneralFoodRepository {
+	return &generalFoodRepository{db: db}
+}
+
+// Search performs name-based search with pagination
+func (r *generalFoodRepository) Search(query string, page int, pageSize int) ([]GeneralFood, int64, error) {
+	var foods []GeneralFood
+	var count int64
+
+	// Build query
+	db := r.db.Model(&GeneralFood{})
+
+	// Apply name filter if provided
+	if query != "" {
+		db = db.Where("LOWER(name) LIKE LOWER(?)", "%"+query+"%")
+	}
+
+	// Get total count
+	if err := db.Count(&count).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to count general foods: %w", err)
+	}
+
+	// Apply pagination
+	offset := (page - 1) * pageSize
+	if err := db.Order("name ASC").
+		Limit(pageSize).
+		Offset(offset).
+		Find(&foods).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to search general foods: %w", err)
+	}
+
+	return foods, count, nil
+}
+
+// GetByID retrieves a single general food by ID
+func (r *generalFoodRepository) GetByID(id uint) (*GeneralFood, error) {
+	var food GeneralFood
+	if err := r.db.First(&food, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("general food not found")
+		}
+		return nil, fmt.Errorf("failed to get general food: %w", err)
+	}
+	return &food, nil
+}

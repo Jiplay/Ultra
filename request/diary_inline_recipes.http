@@ -1,6 +1,6 @@
 ### Variables
 @baseUrl = http://localhost:8080
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJleHAiOjE3NjA5NTM1MDQsImlhdCI6MTc2MDg2NzEwNH0.plGuJ-lpSgWh_TZXfuqq4xclw8pd2vipJ86ef8rGLtM
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxNCwiZW1haWwiOiJiYXJjb2RlX3Rlc3RAZXhhbXBsZS5jb20iLCJleHAiOjE3Njk0MzM4NTQsImlhdCI6MTc2Njg0MTg1NH0.hqkIPobNaWVxdeec9C4ce51hd8kkH5y5-iIyVBux1Yw
 
 ### 1. Create inline recipe with multiple ingredients
 POST {{baseUrl}}/diary/entries
@@ -11,21 +11,16 @@ Content-Type: application/json
   "inline_recipe_name": "Post-Workout Smoothie",
   "custom_ingredients": [
     {
-      "food_id": 1,
+      "food_id": 54,
       "quantity_grams": 200
     },
     {
-      "food_id": 2,
+      "food_id": 55,
       "quantity_grams": 50
-    },
-    {
-      "food_id": 3,
-      "quantity_grams": 30
     }
   ],
   "date": "2025-12-25",
-  "meal_type": "snack",
-  "notes": "Quick post-gym meal"
+  "meal_type": "snack"
 }
 
 ### 2. Get daily summary (should show inline recipe)

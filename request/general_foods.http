@@ -1,0 +1,32 @@
+### Search all general foods with default pagination
+GET http://localhost:8080/general-foods
+
+### Search all general foods (page 2)
+GET http://localhost:8080/general-foods?page=2
+
+### Search with query - chicken (poulet)
+GET http://localhost:8080/general-foods?q=poulet
+
+### Search with query - bread (pain)
+GET http://localhost:8080/general-foods?search=pain
+
+### Search with pagination
+GET http://localhost:8080/general-foods?search=pain&page=1&page_size=10
+
+### Search with larger page size
+GET http://localhost:8080/general-foods?q=pomme&page_size=50
+
+### Edge case: Invalid page (should return 400)
+GET http://localhost:8080/general-foods?page=0
+
+### Edge case: Page size over limit (should cap at 100)
+GET http://localhost:8080/general-foods?page_size=200
+
+### Edge case: Empty query (should return all foods)
+GET http://localhost:8080/general-foods?q=
+
+### Edge case: Non-existent food
+GET http://localhost:8080/general-foods?q=xyz123nonexistent
+
+### Search with special characters
+GET http://localhost:8080/general-foods?q=d'Angole

@@ -1,9 +1,8 @@
 ### Variables
 @baseUrl = http://localhost:8080
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxNCwiZW1haWwiOiJiYXJjb2RlX3Rlc3RAZXhhbXBsZS5jb20iLCJleHAiOjE3NjkzMzI2MTMsImlhdCI6MTc2Njc0MDYxM30.Ihe70dw68XWtpQk7LhQz23WJizjWi_98JFpXYE59r7I
-
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxNCwiZW1haWwiOiJiYXJjb2RlX3Rlc3RAZXhhbXBsZS5jb20iLCJleHAiOjE3Njk0MzM4NTQsImlhdCI6MTc2Njg0MTg1NH0.hqkIPobNaWVxdeec9C4ce51hd8kkH5y5-iIyVBux1Yw
 ### 1. Search Open Food Facts by product name - "apple"
-GET {{baseUrl}}/openfoodfacts/search?q=apple
+GET {{baseUrl}}/openfoodfacts/search?q=pomme
 Authorization: Bearer {{token}}
 
 ### 2. Search Open Food Facts - "banana" with pagination

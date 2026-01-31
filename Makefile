@@ -1,4 +1,4 @@
-.PHONY: help test test-unit test-integration test-coverage test-verbose test-clean test-recipe test-all clean build run docker-up docker-down
+.PHONY: help test test-unit test-integration test-coverage test-verbose test-clean test-recipe test-all clean build run docker-up docker-down data
 
 # Default target
 help:
@@ -16,6 +16,7 @@ help:
 	@echo "  make run               - Run the application locally"
 	@echo "  make docker-up         - Start application with Docker Compose"
 	@echo "  make docker-down       - Stop Docker Compose services"
+	@echo "  make data              - Generate and load food data from CSV files"
 
 # Run all tests
 test:
@@ -115,3 +116,16 @@ test-all:
 		exit 1; \
 	fi; \
 	echo "=========================================="
+
+# Generate SQL files from CSV and load into database
+data:
+	@echo "Processing CSV files and loading into database..."
+	@echo "Step 1: Clearing existing general foods..."
+	@docker exec -i fooddb-postgres psql -U postgres -d fooddb -c "TRUNCATE TABLE general_foods RESTART IDENTITY CASCADE;" || echo "Table may not exist yet, continuing..."
+	@echo ""
+	@echo "Step 2: Generating SQL files from CSV data..."
+	@cd scripts && go run clean_food_csv.go
+	@echo ""
+	@echo "Step 3: Loading SQL files into database..."
+	@cd scripts && ./load_all_foods.sh
+	@echo "Data processing complete!"
